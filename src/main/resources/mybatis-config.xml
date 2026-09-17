@@ -31,9 +31,12 @@
         </environment>
     </environments>
 
-    <!-- 映射文件 -->
+    <!-- 映射文件 / 映射接口 -->
     <mappers>
+        <!-- XML 方式 -->
         <mapper resource="mapper/UserMapper.xml"/>
+        <!-- 注解方式 -->
+        <mapper class="com.example.mapper.UserMapperAnnotation"/>
     </mappers>
 
 </configuration>
