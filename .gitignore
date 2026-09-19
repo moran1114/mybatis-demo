@@ -32,8 +32,13 @@ bin/
 ### Maven ###
 target/
 
+### Local runtime configuration ###
+.env
+*.local.properties
+logs/
+
 ### Claude Code ###
 .idea/claudeCodeTabState.xml
 
-### 敏感配置（含真实密码，勿提交）###
+### Sensitive configuration (never commit real credentials) ###
 db.properties

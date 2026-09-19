@@ -1,26 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE configuration
         PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
-
-    <!-- 引入数据库连接配置 -->
-    <properties resource="db.properties"/>
+    <properties resource="database.properties"/>
 
     <settings>
-        <!-- 下划线命名自动映射到驼峰命名：created_at -> createdAt -->
         <setting name="mapUnderscoreToCamelCase" value="true"/>
-        <!-- 使用 Log4j 输出日志（SQL 语句、参数等） -->
-        <setting name="logImpl" value="LOG4J"/>
+        <setting name="logImpl" value="LOG4J2"/>
     </settings>
 
-    <!-- 实体类别名：com.example.entity 包下类可直接用类名作为别名 -->
     <typeAliases>
-        <package name="com.example.entity"/>
+        <package name="dev.course.persistence.entity"/>
     </typeAliases>
 
-    <environments default="development">
-        <environment id="development">
+    <environments default="local">
+        <environment id="local">
             <transactionManager type="JDBC"/>
             <dataSource type="POOLED">
                 <property name="driver" value="${jdbc.driver}"/>
@@ -31,12 +26,7 @@
         </environment>
     </environments>
 
-    <!-- 映射文件 / 映射接口 -->
     <mappers>
-        <!-- XML 方式 -->
-        <mapper resource="mapper/UserMapper.xml"/>
-        <!-- 注解方式 -->
-        <mapper class="com.example.mapper.UserMapperAnnotation"/>
+        <mapper resource="mapper/StaffProfileMapper.xml"/>
     </mappers>
-
 </configuration>
