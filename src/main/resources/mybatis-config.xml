@@ -27,6 +27,6 @@
     </environments>
 
     <mappers>
-        <mapper resource="mapper/StaffProfileMapper.xml"/>
+        <package name="dev.course.persistence.mapper"/>
     </mappers>
 </configuration>

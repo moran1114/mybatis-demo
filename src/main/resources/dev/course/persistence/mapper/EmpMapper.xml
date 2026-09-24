@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.course.persistence.mapper.EmpMapper">
+    <resultMap id="empMap" type="dev.course.persistence.entity.Emp">
+        <id property="empno" column="empno"/>
+        <result property="ename" column="ename"/>
+        <result property="job" column="job"/>
+        <result property="mgr" column="mgr"/>
+        <result property="hiredate" column="hiredate"/>
+        <result property="sal" column="sal"/>
+        <result property="comm" column="comm"/>
+        <result property="deptno" column="deptno"/>
+    </resultMap>
+
+    <resultMap id="empSummaryMap" type="dev.course.persistence.entity.Emp" autoMapping="false">
+        <result property="ename" column="ename"/>
+        <result property="sal" column="sal"/>
+        <result property="deptno" column="deptno"/>
+    </resultMap>
+
+    <sql id="empColumns">empno, ename, job, mgr, hiredate, sal, comm, deptno</sql>
+
+    <!-- 1. 查询所有员工的所有信息（empno, ename, job, mgr, hiredate, sal, comm, deptno）。 -->
+    <select id="selectAllEmps" resultMap="empMap">
+        select * from emp
+    </select>
+
+    <!-- 2. 查询所有员工的姓名 (ename)、工资 (sal) 和部门编号 (deptno)。 -->
+    <select id="selectNameSalDeptno" resultMap="empSummaryMap">
+        select ename,sal,deptno from emp
+    </select>
+
+    <!-- 3. 查询工资 (sal) 大于 10000 的所有员工信息。 -->
+    <select id="selectSalAbove10000" resultMap="empMap">
+        select * from emp where sal>10000
+    </select>
+
+    <!-- 4. 查询部门编号 (deptno) 为 20 或 30 的所有员工信息。 -->
+    <select id="selectDeptno20Or30" resultMap="empMap">
+        select * from emp where deptno = 20 or deptno = 30
+    </select>
+
+    <!-- 5. 查询入职日期 (hiredate) 在 2001-01-01 之后的所有员工信息。 -->
+    <select id="selectHiredAfter2001" resultMap="empMap">
+        select * from emp where hiredate > '2001-01-01'
+    </select>
+
+    <!-- 6. 查询奖金 (comm) 不为 NULL 的所有员工信息。 -->
+    <select id="selectWithComm" resultMap="empMap">
+        select * from emp where comm is not null
+    </select>
+
+    <!-- 7. 查询职位 (job) 为 '销售员' 的所有员工信息。 -->
+    <select id="selectSalespeople" resultMap="empMap">
+        select * from emp where job ='销售员'
+    </select>
+
+    <!-- 8. 查询工资 (sal) 在 8000 到 20000 之间的所有员工信息。 -->
+    <select id="selectSalBetween8000And20000" resultMap="empMap">
+        select * from emp where sal between 8000 and 20000
+    </select>
+
+    <!-- 9. 查询没有奖金 (comm 为 NULL) 且工资 (sal) 小于 15000 的所有员工信息。 -->
+    <select id="selectWithoutCommAndSalBelow15000" resultMap="empMap">
+        select * from emp where comm is null and sal&lt;15000
+    </select>
+
+    <!-- 10. 查询所有员工信息，按工资 (sal) 降序排序。 -->
+    <select id="selectOrderBySalDesc" resultMap="empMap">
+        select * from emp order by sal desc
+    </select>
+
+    <select id="selectEmpById" resultMap="empMap">
+        SELECT <include refid="empColumns"/> FROM emp WHERE empno = #{empno}
+    </select>
+
+    <insert id="insertEmp" useGeneratedKeys="true" keyProperty="empno" keyColumn="empno">
+        INSERT INTO emp (ename, job, mgr, hiredate, sal, comm, deptno)
+        VALUES (#{ename}, #{job}, #{mgr}, #{hiredate}, #{sal}, #{comm}, #{deptno})
+    </insert>
+
+    <update id="updateEmp">
+        UPDATE emp
+        SET ename = #{ename}, job = #{job}, mgr = #{mgr}, hiredate = #{hiredate},
+            sal = #{sal}, comm = #{comm}, deptno = #{deptno}
+        WHERE empno = #{empno}
+    </update>
+
+    <delete id="deleteEmpById">
+        DELETE FROM emp WHERE empno = #{empno}
+    </delete>
+
+    <!-- where 与 trim 复用相同条件，避免两份筛选逻辑发生偏差。 -->
+    <sql id="empConditions">
+        <if test="emp != null and emp.ename != null and emp.ename != ''">
+            AND ename LIKE CONCAT('%', #{emp.ename}, '%')
+        </if>
+        <if test="emp != null and emp.job != null and emp.job != ''">
+            AND job LIKE CONCAT('%', #{emp.job}, '%')
+        </if>
+        <if test="emp != null and emp.deptno != null">
+            AND deptno = #{emp.deptno}
+        </if>
+        <if test="emp != null and emp.sal != null">
+            AND sal &gt;= #{emp.sal}
+        </if>
+    </sql>
+
+    <select id="selectByCondition" resultMap="empMap">
+        SELECT <include refid="empColumns"/> FROM emp
+        <where><include refid="empConditions"/></where>
+        ORDER BY sal DESC, empno
+    </select>
+
+    <select id="selectByConditionWithTrim" resultMap="empMap">
+        SELECT <include refid="empColumns"/> FROM emp
+        <trim prefix="WHERE" prefixOverrides="AND |OR ">
+            <include refid="empConditions"/>
+        </trim>
+        ORDER BY sal DESC, empno
+    </select>
+
+    <!-- sort 是枚举；column 只能来自枚举内预定义的列名。 -->
+    <select id="selectSorted" resultMap="empMap">
+        SELECT <include refid="empColumns"/> FROM emp
+        ORDER BY
+        <choose>
+            <when test="sort != null">${sort.column}</when>
+            <otherwise>empno</otherwise>
+        </choose>
+        DESC
+    </select>
+
+    <update id="updatePartial">
+        UPDATE emp
+        <set>
+            <if test="ename != null">ename = #{ename},</if>
+            <if test="job != null">job = #{job},</if>
+            <if test="mgr != null">mgr = #{mgr},</if>
+            <if test="hiredate != null">hiredate = #{hiredate},</if>
+            <if test="sal != null">sal = #{sal},</if>
+            <if test="comm != null">comm = #{comm},</if>
+            <if test="deptno != null">deptno = #{deptno},</if>
+        </set>
+        WHERE empno = #{empno}
+    </update>
+
+    <insert id="insertBatch">
+        INSERT INTO emp (ename, job, mgr, hiredate, sal, comm, deptno)
+        VALUES
+        <foreach collection="items" item="item" separator=",">
+            (#{item.ename}, #{item.job}, #{item.mgr}, #{item.hiredate},
+             #{item.sal}, #{item.comm}, #{item.deptno})
+        </foreach>
+    </insert>
+
+    <delete id="deleteBatch">
+        DELETE FROM emp
+        <choose>
+            <when test="ids != null and ids.size() > 0">
+                WHERE empno IN
+                <foreach collection="ids" item="empno" open="(" separator="," close=")">
+                    #{empno}
+                </foreach>
+            </when>
+            <otherwise>WHERE 1 = 0</otherwise>
+        </choose>
+    </delete>
+
+    <select id="selectPreferred" resultMap="empMap">
+        SELECT <include refid="empColumns"/> FROM emp
+        <where>
+            <choose>
+                <when test="exactName != null and exactName != ''">
+                    ename = #{exactName}
+                </when>
+                <when test="deptno != null">
+                    deptno = #{deptno}
+                </when>
+                <otherwise>1 = 1</otherwise>
+            </choose>
+        </where>
+        ORDER BY empno
+    </select>
+</mapper>

@@ -23,6 +23,7 @@ public final class EmbeddedDatabase {
             Class.forName("org.h2.Driver");
             try (Connection connection = DriverManager.getConnection(url(databaseName), "sa", "")) {
                 ScriptRunner runner = new ScriptRunner(connection);
+                runner.setStopOnError(true);
                 runner.setLogWriter(null);
                 runner.setErrorLogWriter(null);
                 run(runner, "schema-h2.sql");

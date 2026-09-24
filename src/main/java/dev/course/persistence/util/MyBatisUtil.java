@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,21 +22,36 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public final class MyBatisSessions {
+public final class MyBatisUtil {
 
     private static final String CONFIG_RESOURCE = "mybatis-config.xml";
     private static final String DATABASE_RESOURCE = "database.properties";
 
-    private MyBatisSessions() {
+    private MyBatisUtil() {
     }
 
     public static SqlSession openSession() {
         return Holder.FACTORY.openSession(false);
     }
 
+    public static SqlSession openMyBatisSession() {
+        return MyBatisHolder.FACTORY.openSession(false);
+    }
+
+    // 基础实验使用原生构建器，只执行 Mapper XML 中的 SQL。
+    public static SqlSessionFactory buildMyBatis(Properties databaseProperties) {
+        try (Reader reader = Resources.getResourceAsReader(CONFIG_RESOURCE)) {
+            return new SqlSessionFactoryBuilder().build(reader, "local", databaseProperties);
+        } catch (IOException exception) {
+            throw new IllegalStateException("无法构建 MyBatis SqlSessionFactory", exception);
+        }
+    }
+
+    // 增强实验替换为 MP 构建器，注入 BaseMapper CRUD 并注册分页插件。
     public static SqlSessionFactory build(Properties databaseProperties, DbType databaseType) {
         try (Reader reader = Resources.getResourceAsReader(CONFIG_RESOURCE)) {
-            GenericTypeUtils.setGenericTypeResolver(MyBatisSessions::resolveTypeArguments);
+            // MP 3.5.3.1 的默认泛型解析依赖 Spring；纯 Java 工程使用此解析器。
+            GenericTypeUtils.setGenericTypeResolver(MyBatisUtil::resolveTypeArguments);
             SqlSessionFactory factory = new MybatisSqlSessionFactoryBuilder()
                     .build(reader, "local", databaseProperties);
 
@@ -70,7 +86,7 @@ public final class MyBatisSessions {
 
     private static void override(Properties properties, String environmentName, String propertyName) {
         String value = System.getenv(environmentName);
-        if (value != null && !value.trim().isEmpty()) {
+        if (value != null) {
             properties.setProperty(propertyName, value);
         }
     }
@@ -146,5 +162,9 @@ public final class MyBatisSessions {
     private static final class Holder {
         private static final SqlSessionFactory FACTORY =
                 build(localDatabaseProperties(), DbType.MYSQL);
+    }
+
+    private static final class MyBatisHolder {
+        private static final SqlSessionFactory FACTORY = buildMyBatis(localDatabaseProperties());
     }
 }

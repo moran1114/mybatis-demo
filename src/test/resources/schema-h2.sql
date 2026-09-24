@@ -1,15 +1,14 @@
-DROP TABLE IF EXISTS staff_profile;
+DROP TABLE IF EXISTS emp;
 
-CREATE TABLE staff_profile (
-    staff_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    full_name VARCHAR(50) NOT NULL,
-    gender_mark CHAR(1) NOT NULL DEFAULT 'U',
-    business_unit VARCHAR(60) NOT NULL,
-    position_title VARCHAR(60) NOT NULL,
-    monthly_pay DECIMAL(12, 2) NOT NULL CHECK (monthly_pay >= 0),
-    entry_date DATE NOT NULL,
-    active_state TINYINT NOT NULL DEFAULT 1 CHECK (active_state IN (0, 1))
+CREATE TABLE emp (
+    empno BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ename VARCHAR(50) NOT NULL,
+    job VARCHAR(60) NOT NULL,
+    mgr BIGINT NULL,
+    hiredate DATE NOT NULL,
+    sal DECIMAL(12, 2) NOT NULL CHECK (sal >= 0),
+    comm DECIMAL(12, 2) NULL CHECK (comm IS NULL OR comm >= 0),
+    deptno INT NOT NULL
 );
-
-CREATE INDEX idx_staff_profile_name ON staff_profile(full_name);
-CREATE INDEX idx_staff_profile_unit_state ON staff_profile(business_unit, active_state);
+CREATE INDEX idx_emp_ename ON emp(ename);
+CREATE INDEX idx_emp_deptno ON emp(deptno);

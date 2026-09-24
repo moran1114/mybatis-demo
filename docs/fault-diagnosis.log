@@ -1,0 +1,35 @@
+TEST: wrongEntityPropertyFailsDuringParameterBinding
+10:29:43.497 DEBUG [insertEmp] ==>  Preparing: INSERT INTO emp (ename, job, mgr, hiredate, sal, comm, deptno) VALUES (?, ?, ?, ?, ?, ?, ?)
+10:29:43.499 INFO  [FaultDiagnosisTest] 故障1：错误实体属性 -> ReflectionException: There is no getter for property named 'empname' in 'class dev.course.persistence.entity.Emp'
+10:29:43.511 DEBUG [insertEmp] ==>  Preparing: INSERT INTO emp (ename, job, mgr, hiredate, sal, comm, deptno) VALUES (?, ?, ?, ?, ?, ?, ?)
+10:29:43.511 DEBUG [insertEmp] ==> Parameters: 故障演练员工(String), 测试工程师(String), null, 2025-01-06(LocalDate), 9000(BigDecimal), null, 40(Integer)
+10:29:43.511 DEBUG [insertEmp] <==    Updates: 1
+10:29:43.511 INFO  [FaultDiagnosisTest] 恢复正确映射：INSERT 成功，主键回填 empno=9。
+
+TEST: missingGeneratedKeysInsertsRowButDoesNotPopulateId
+10:29:43.523 DEBUG [insertEmp] ==>  Preparing: INSERT INTO emp (ename, job, mgr, hiredate, sal, comm, deptno) VALUES (?, ?, ?, ?, ?, ?, ?)
+10:29:43.524 DEBUG [insertEmp] ==> Parameters: 故障演练员工(String), 测试工程师(String), null, 2025-01-06(LocalDate), 9000(BigDecimal), null, 40(Integer)
+10:29:43.524 DEBUG [insertEmp] <==    Updates: 1
+10:29:43.525 DEBUG [selectPreferred] ==>  Preparing: SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno FROM emp WHERE ename = ? ORDER BY empno
+10:29:43.525 DEBUG [selectPreferred] ==> Parameters: 故障演练员工(String)
+10:29:43.525 DEBUG [selectPreferred] <==      Total: 1
+10:29:43.525 INFO  [FaultDiagnosisTest] 故障3：INSERT 更新行数=1，但 Java 对象 empno=null。
+10:29:43.533 DEBUG [insertEmp] ==>  Preparing: INSERT INTO emp (ename, job, mgr, hiredate, sal, comm, deptno) VALUES (?, ?, ?, ?, ?, ?, ?)
+10:29:43.533 DEBUG [insertEmp] ==> Parameters: 故障演练员工(String), 测试工程师(String), null, 2025-01-06(LocalDate), 9000(BigDecimal), null, 40(Integer)
+10:29:43.533 DEBUG [insertEmp] <==    Updates: 1
+10:29:43.533 INFO  [FaultDiagnosisTest] 恢复正确映射：INSERT 成功，主键回填 empno=11。
+
+TEST: wrongNamedParameterReportsBindingException
+10:29:43.543 INFO  [FaultDiagnosisTest] 补充演练：错误 @Param 名称 -> BindingException: Parameter 'missingEmpno' not found. Available parameters are [empno, param1]
+10:29:43.549 DEBUG [selectEmpById] ==>  Preparing: SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno FROM emp WHERE empno = ?
+10:29:43.550 DEBUG [selectEmpById] ==> Parameters: 1(Long)
+10:29:43.550 DEBUG [selectEmpById] <==      Total: 1
+
+TEST: wrongResultColumnLeavesNameNullWhenAutomaticMappingIsDisabled
+10:29:43.559 DEBUG [selectEmpById] ==>  Preparing: SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno FROM emp WHERE empno = ?
+10:29:43.559 DEBUG [selectEmpById] ==> Parameters: 1(Long)
+10:29:43.560 DEBUG [selectEmpById] <==      Total: 1
+10:29:43.560 INFO  [FaultDiagnosisTest] 故障2：SQL 查到 empno=1，错误 resultMap 的 ename=null；其他字段正常。
+10:29:43.565 DEBUG [selectEmpById] ==>  Preparing: SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno FROM emp WHERE empno = ?
+10:29:43.566 DEBUG [selectEmpById] ==> Parameters: 1(Long)
+10:29:43.566 DEBUG [selectEmpById] <==      Total: 1
