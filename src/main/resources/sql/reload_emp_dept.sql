@@ -3,6 +3,10 @@ CREATE DATABASE IF NOT EXISTS persistence_lab
     COLLATE utf8mb4_0900_ai_ci;
 USE persistence_lab;
 
+-- Drop tables referencing emp/dept first (added for relation tables).
+DROP TABLE IF EXISTS emp_project;
+DROP TABLE IF EXISTS emp_detail;
+DROP TABLE IF EXISTS project;
 DROP TABLE IF EXISTS emp;
 DROP TABLE IF EXISTS dept;
 

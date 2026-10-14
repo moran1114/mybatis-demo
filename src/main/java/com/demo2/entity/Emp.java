@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @TableName("emp")
 public class Emp {
@@ -32,6 +33,12 @@ public class Emp {
 
     @TableField("deptno")
     private Integer deptno;
+
+    @TableField(exist = false)
+    private EmpDetail detail;
+
+    @TableField(exist = false)
+    private List<Project> projects;
 
     public Long getEmpno() {
         return empno;
@@ -95,6 +102,22 @@ public class Emp {
 
     public void setDeptno(Integer deptno) {
         this.deptno = deptno;
+    }
+
+    public EmpDetail getDetail() {
+        return detail;
+    }
+
+    public void setDetail(EmpDetail detail) {
+        this.detail = detail;
+    }
+
+    public List<Project> getProjects() {
+        return projects;
+    }
+
+    public void setProjects(List<Project> projects) {
+        this.projects = projects;
     }
 
     @Override

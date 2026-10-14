@@ -3,6 +3,7 @@ package com.demo2.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import java.util.List;
 
 @TableName("dept")
 public class Dept {
@@ -14,6 +15,9 @@ public class Dept {
 
     @TableField("loc")
     private String loc;
+
+    @TableField(exist = false)
+    private List<Emp> emps;
 
     public Integer getDeptno() {
         return deptno;
@@ -37,6 +41,14 @@ public class Dept {
 
     public void setLoc(String loc) {
         this.loc = loc;
+    }
+
+    public List<Emp> getEmps() {
+        return emps;
+    }
+
+    public void setEmps(List<Emp> emps) {
+        this.emps = emps;
     }
 
     @Override

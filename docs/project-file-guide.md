@@ -382,12 +382,13 @@ Mapper 错误诊断测试，共 4 个测试方法。
 
 ## 7. 测试统计
 
-当前 Maven 测试结果为 26 个测试：
+当前 Maven 测试结果为 32 个测试：
 
 - `EmpBasicQueryTest`：10 个
 - `EmpMapperTest`：10 个
 - `EmpMyBatisPlusTest`：2 个
 - `FaultDiagnosisTest`：4 个
+- `RelationQueryTest`：6 个
 
 运行命令：
 
@@ -398,7 +399,7 @@ mvn test
 测试成功时应显示：
 
 ```text
-Tests run: 26, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 32, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -408,4 +409,39 @@ BUILD SUCCESS
 2. MyBatis-Plus 主要通过实体注解和 `BaseMapper` 自动生成通用 SQL。
 3. H2 只用于自动化测试，不会修改真实 MySQL 数据库。
 4. `EmpBrief`、`EmpManagerView` 和 `DeptPayrollSummary` 是为部分字段查询、关联查询和统计查询准备的 DTO，目前还没有对应的 Mapper 方法。
-5. `EmpBasicQueryTest` 验证经典 SQL，`EmpMapperTest` 验证动态 SQL，`EmpMyBatisPlusTest` 验证 MyBatis-Plus，`FaultDiagnosisTest` 验证错误配置。
+5. `EmpBasicQueryTest` 验证经典 SQL，`EmpMapperTest` 验证动态 SQL，`EmpMyBatisPlusTest` 验证 MyBatis-Plus，`FaultDiagnosisTest` 验证错误配置，`RelationQueryTest` 验证关联查询。
+
+## 9. 关联查询演示（一对多 / 一对一 / 多对多）
+
+新增三张表支持关联查询，MySQL 建表脚本为 `src/main/resources/sql/reload_relations.sql`（需先执行 `reload_emp_dept.sql`），H2 测试库对应 `schema-h2.sql` / `data-h2.sql`：
+
+| 表 | 关系 | 说明 |
+| --- | --- | --- |
+| `emp_detail` | 一对一 | 员工详情，共享主键 `empno`（外键指向 `emp`） |
+| `project` | 多对多 | 项目表 |
+| `emp_project` | 多对多 | 员工-项目连接表，复合主键 `(empno, project_id)` |
+
+### 实体关联字段
+
+`Emp` 增加 `detail`（一对一）和 `projects`（多对多），`Dept` 增加 `emps`（一对多），`Project` 增加 `members`。这些字段都标注 `@TableField(exist = false)`，避免 MyBatis-Plus `BaseMapper` 把它们误当成表列；`toString` 均不打印关联字段，防止双向引用递归。
+
+### Mapper 与 resultMap
+
+- `DeptMapper.selectDeptWithEmps`：`dept LEFT JOIN emp`，`<collection property="emps">` 一对多合并
+- `EmpMapper.selectEmpWithDetail`：`emp LEFT JOIN emp_detail`，`<association property="detail">` 一对一
+- `EmpMapper.selectEmpWithProjects`：`emp → emp_project → project` 三表 LEFT JOIN，`<collection property="projects">` 多对多
+- `ProjectMapper.selectProjectWithMembers`：反方向多对多，`<collection property="members">`
+
+关联查询复用了 `EmpMapper.xml` 的 `empMap`（`extends="empMap"`）；JOIN 时同名列用别名区分（`detail_empno`、`emp_deptno`、`project_name`）。
+
+### 交互终端
+
+`MyBatisRelationDemo`（`com.demo2.util`）是菜单式交互终端，在 IDEA 中直接运行 main 方法：
+
+1. 一对多：输入部门编号，查询部门及其员工列表
+2. 一对一：输入员工编号，查询员工及其详情档案
+3. 多对多：输入员工编号，查询员工参与的项目
+4. 多对多：输入项目编号，查询项目成员
+0. 退出
+
+程序对查无此编号、无详情、空集合等场景给出中文提示，只读查询不修改数据。

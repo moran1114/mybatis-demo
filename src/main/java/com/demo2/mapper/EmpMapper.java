@@ -55,4 +55,8 @@ public interface EmpMapper extends BaseMapper<Emp> {
 
     List<Emp> selectPreferred(@Param("exactName") String exactName,
                               @Param("deptno") Integer deptno);
+
+    Emp selectEmpWithDetail(@Param("empno") Long empno);
+
+    Emp selectEmpWithProjects(@Param("empno") Long empno);
 }

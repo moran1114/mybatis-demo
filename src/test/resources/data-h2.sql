@@ -16,3 +16,30 @@ VALUES
     (6, 'Shen Zhi', 'Manager', NULL, '2000-11-23', 22000.00, 3000.00, 20),
     (7, 'Zhao Ning', 'Salesperson', 6, '2024-06-01', 20000.00, 2000.00, 30),
     (8, 'Wu Tong', 'Clerk', 6, '2024-07-15', 7500.00, NULL, 10);
+
+INSERT INTO project (project_id, name, start_date, budget)
+VALUES
+    (101, 'Payment Gateway Refactor', '2024-03-01', 800000.00),
+    (102, 'Data Platform Construction', '2024-06-15', 1200000.00),
+    (103, 'Mobile App', '2025-01-10', 600000.00);
+
+INSERT INTO emp_detail (empno, phone, email, address, emergency_contact)
+VALUES
+    (1, '13800000001', 'lin.han@example.com', 'Shanghai, Pudong', 'Wang Lan'),
+    (2, '13800000002', 'tang.ke@example.com', 'Shenzhen, Nanshan', 'Tang Li'),
+    (3, '13800000003', 'xu.shu@example.com', 'Shanghai, Xuhui', 'Xu Feng'),
+    (4, '13800000004', 'zhou.qi@example.com', 'Shenzhen, Futian', 'Zhou Jie'),
+    (5, '13800000005', 'chen.an@example.com', 'Beijing, Chaoyang', 'Chen Jing'),
+    (6, '13800000006', 'shen.zhi@example.com', 'Shanghai, Jingan', 'Shen Yue'),
+    (7, '13800000007', 'zhao.ning@example.com', 'Shenzhen, Baoan', 'Zhao Min');
+
+INSERT INTO emp_project (empno, project_id, role)
+VALUES
+    (1, 101, 'Backend Engineer'),
+    (1, 102, 'Data Contributor'),
+    (3, 102, 'Data Analyst'),
+    (3, 103, 'Requirements Analyst'),
+    (6, 101, 'Project Manager'),
+    (6, 102, 'Tech Lead'),
+    (2, 103, 'Sales Support'),
+    (7, 103, 'UI Reviewer');

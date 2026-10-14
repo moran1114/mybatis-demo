@@ -184,4 +184,47 @@
         </where>
         ORDER BY empno
     </select>
+
+    <!-- One-to-one: emp -> emp_detail. emp_detail.empno is aliased to avoid
+         clashing with emp.empno (same column name, later one would win). -->
+    <resultMap id="empDetailMap" type="com.demo2.entity.EmpDetail">
+        <id property="empno" column="detail_empno"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="address" column="address"/>
+        <result property="emergencyContact" column="emergency_contact"/>
+    </resultMap>
+
+    <resultMap id="empWithDetailMap" type="com.demo2.entity.Emp" extends="empMap">
+        <association property="detail" resultMap="empDetailMap"/>
+    </resultMap>
+
+    <select id="selectEmpWithDetail" resultMap="empWithDetailMap">
+        SELECT e.empno, e.ename, e.job, e.mgr, e.hiredate, e.sal, e.comm, e.deptno,
+               d.empno AS detail_empno,
+               d.phone, d.email, d.address, d.emergency_contact
+        FROM emp e
+        LEFT JOIN emp_detail d ON e.empno = d.empno
+        WHERE e.empno = #{empno}
+    </select>
+
+    <!-- Many-to-many: emp -> emp_project -> project. -->
+    <resultMap id="empWithProjectsMap" type="com.demo2.entity.Emp" extends="empMap">
+        <collection property="projects" ofType="com.demo2.entity.Project">
+            <id property="projectId" column="project_id"/>
+            <result property="name" column="project_name"/>
+            <result property="startDate" column="start_date"/>
+            <result property="budget" column="budget"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectEmpWithProjects" resultMap="empWithProjectsMap">
+        SELECT e.empno, e.ename, e.job, e.mgr, e.hiredate, e.sal, e.comm, e.deptno,
+               p.project_id, p.name AS project_name, p.start_date, p.budget
+        FROM emp e
+        LEFT JOIN emp_project ep ON e.empno = ep.empno
+        LEFT JOIN project p ON ep.project_id = p.project_id
+        WHERE e.empno = #{empno}
+        ORDER BY p.project_id
+    </select>
 </mapper>
