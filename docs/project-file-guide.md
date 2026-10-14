@@ -11,7 +11,9 @@
 - `choose` 分支查询
 - MyBatis-Plus `BaseMapper`
 - Lambda 条件构造器
+- OR 嵌套、部分字段、Map 结果、分组聚合和字段更新策略
 - 分页查询
+- 自动填充、逻辑删除和乐观锁
 - H2 内存数据库测试
 - Mapper 错误诊断测试
 
@@ -163,6 +165,7 @@ MyBatis 配置和会话工厂工具类，负责把配置文件、数据库连接
 - 打开数据库会话 `SqlSession`
 - 根据当前环境覆盖数据库连接参数
 - 配置 MyBatis-Plus 分页拦截器
+- 注册 `AuditMetaObjectHandler`、`EmpLifecycleMapper` 和乐观锁插件；分页插件放在最后
 - 支持 H2 测试数据库和 MySQL 运行环境
 
 常用方法：
@@ -382,13 +385,15 @@ Mapper 错误诊断测试，共 4 个测试方法。
 
 ## 7. 测试统计
 
-当前 Maven 测试结果为 32 个测试：
+当前 Maven 测试共 51 个测试：
 
 - `EmpBasicQueryTest`：10 个
 - `EmpMapperTest`：10 个
 - `EmpMyBatisPlusTest`：2 个
 - `FaultDiagnosisTest`：4 个
 - `RelationQueryTest`：6 个
+- `EmpAdvancedQueryTest`：11 个
+- `EmpLifecycleTest`：8 个
 
 运行命令：
 
@@ -399,7 +404,7 @@ mvn test
 测试成功时应显示：
 
 ```text
-Tests run: 32, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 51, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -445,3 +450,39 @@ BUILD SUCCESS
 0. 退出
 
 程序对查无此编号、无详情、空集合等场景给出中文提示，只读查询不修改数据。
+
+## 10. 第二节：条件构造器与高级查询
+
+详细讲义：[08-02-query-wrapper.md](08-02-query-wrapper.md)。
+
+`util/MyBatisPlusQueryDemo.java` 是本节控制台入口，按 8.2.1—8.2.8 展示链式 WHERE、OR 嵌套、Lambda 可选条件、`selectCount/selectOne`、部分字段与 `selectMaps`、`GROUP BY/HAVING`、`selectByMap` 和条件更新。
+
+`Emp.comm` 显式配置 `updateStrategy = FieldStrategy.NOT_NULL`，对比实体 null 跳过更新、0 正常更新和 Wrapper 显式清空。`EmpAdvancedQueryTest` 的 11 个测试验证这些结果及完整演示入口；演示及测试中的修改均回滚。
+
+## 11. 第三节：分页、自动填充、逻辑删除与乐观锁
+
+详细讲义：[08-03-pagination-lifecycle.md](08-03-pagination-lifecycle.md)。
+
+| 文件 | 作用 |
+| --- | --- |
+| `entity/EmpLifecycle.java` | 独立映射 `emp_lifecycle`，含 `createTime/updateTime`、`@TableLogic deleted` 和 `@Version version` |
+| `mapper/EmpLifecycleMapper.java` | 继承 BaseMapper，由 MyBatis-Plus 工厂手动注册 |
+| `handler/AuditMetaObjectHandler.java` | 插入填充时间，更新覆盖旧的更新时间；可注入 Clock 便于测试 |
+| `util/MyBatisUtil.java` | 注册处理器与“乐观锁 → 分页”插件链 |
+| `util/MyBatisPlusLifecycleDemo.java` | 分页、自动填充、删除后物理行验证、两个旧快照的版本冲突演示 |
+| `src/main/resources/sql/init_emp_lifecycle.sql` | MySQL 创建实验表，不清空已有数据 |
+| `mapper/EmpLifecycleTest.java`（测试目录） | 8 个测试，覆盖时间填充、逻辑删除、冲突、Wrapper 更新边界与分页 |
+
+`emp_lifecycle` 是独立实验表，由本节示例自行插入记录。H2 表结构已纳入 `schema-h2.sql`；原来的 `emp` 继续承担基础 CRUD 和关联查询。本节 MySQL 入口运行前需执行新增建表脚本，入口结束时回滚事务。
+
+两章一起验证，在 PowerShell / CMD 终端执行：
+
+```powershell
+mvn "-Dtest=EmpAdvancedQueryTest,EmpLifecycleTest" test
+```
+
+在 IDEA 的 Maven 运行配置参数栏中使用以下内容，不填写 `mvn`，也不要加单引号：
+
+```text
+-Dtest=EmpAdvancedQueryTest,EmpLifecycleTest test
+```

@@ -1,5 +1,6 @@
 package com.demo2.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -28,7 +29,8 @@ public class Emp {
     @TableField("sal")
     private BigDecimal sal;
 
-    @TableField("comm")
+    // 8.2.8：实体更新时 null 表示不修改奖金；显式清空可使用 LambdaUpdateWrapper.set。
+    @TableField(value = "comm", updateStrategy = FieldStrategy.NOT_NULL)
     private BigDecimal comm;
 
     @TableField("deptno")

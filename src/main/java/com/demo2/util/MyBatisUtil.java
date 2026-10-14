@@ -2,9 +2,13 @@ package com.demo2.util;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
+import com.baomidou.mybatisplus.core.toolkit.GlobalConfigUtils;
 import com.baomidou.mybatisplus.core.toolkit.reflect.GenericTypeUtils;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import com.demo2.handler.AuditMetaObjectHandler;
+import com.demo2.mapper.EmpLifecycleMapper;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -51,11 +55,18 @@ public final class MyBatisUtil {
             SqlSessionFactory factory = new MybatisSqlSessionFactoryBuilder()
                     .build(reader, "local", databaseProperties);
 
+            // 非 Spring 工程通过 GlobalConfig 注册自动填充处理器。
+            GlobalConfigUtils.getGlobalConfig(factory.getConfiguration())
+                    .setMetaObjectHandler(new AuditMetaObjectHandler());
+            factory.getConfiguration().addMapper(EmpLifecycleMapper.class);
+
             PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(databaseType);
             pagination.setOverflow(false);
             pagination.setMaxLimit(100L);
 
             MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+            interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
+            // 分页放在插件链最后。
             interceptor.addInnerInterceptor(pagination);
             factory.getConfiguration().addInterceptor(interceptor);
             return factory;

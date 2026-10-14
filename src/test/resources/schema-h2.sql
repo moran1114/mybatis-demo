@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS emp_project;
+DROP TABLE IF EXISTS emp_lifecycle;
 DROP TABLE IF EXISTS emp_detail;
 DROP TABLE IF EXISTS project;
 DROP TABLE IF EXISTS emp;
@@ -24,6 +25,18 @@ CREATE TABLE emp (
 
 CREATE INDEX idx_emp_ename ON emp(ename);
 CREATE INDEX idx_emp_deptno ON emp(deptno);
+
+CREATE TABLE emp_lifecycle (
+    empno BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ename VARCHAR(50) NOT NULL,
+    sal DECIMAL(12, 2) NOT NULL CHECK (sal >= 0),
+    deptno INT NOT NULL,
+    create_time TIMESTAMP(6) NOT NULL,
+    update_time TIMESTAMP(6) NOT NULL,
+    deleted INT NOT NULL DEFAULT 0 CHECK (deleted IN (0, 1)),
+    version INT NOT NULL DEFAULT 0
+);
+CREATE INDEX idx_emp_lifecycle_dept ON emp_lifecycle(deptno, deleted);
 
 CREATE TABLE project (
     project_id INT AUTO_INCREMENT PRIMARY KEY,
