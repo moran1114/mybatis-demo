@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
-    <properties resource="database.properties"/>
+    <properties resource="db.properties"/>
 
     <settings>
         <setting name="mapUnderscoreToCamelCase" value="true"/>
@@ -11,7 +11,7 @@
     </settings>
 
     <typeAliases>
-        <package name="dev.course.persistence.entity"/>
+        <package name="com.demo2.entity"/>
     </typeAliases>
 
     <environments default="local">
@@ -27,6 +27,7 @@
     </environments>
 
     <mappers>
-        <package name="dev.course.persistence.mapper"/>
+        <mapper resource="mapper/EmpMapper.xml"/>
     </mappers>
 </configuration>
+

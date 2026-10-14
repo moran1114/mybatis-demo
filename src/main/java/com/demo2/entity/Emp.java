@@ -1,4 +1,4 @@
-package dev.course.persistence.entity;
+package com.demo2.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

@@ -1,31 +1,31 @@
 USE persistence_lab;
 
--- 1.查询所有员工的所有信息（empno, ename, job, mgr, hiredate, sal, comm, deptno）。
+-- 1. All employee columns.
 select * from emp;
 
--- 2.查询所有员工的姓名 (ename)、工资 (sal) 和部门编号 (deptno)。
-select ename,sal,deptno from emp;
+-- 2. Name, salary, and department number.
+select ename, sal, deptno from emp;
 
--- 3.查询工资 (sal) 大于 10000 的所有员工信息。
-select * from emp where sal>10000;
+-- 3. Salary greater than 10000.
+select * from emp where sal > 10000;
 
--- 4.查询部门编号 (deptno) 为 20 或 30 的所有员工信息。
+-- 4. Department 20 or 30.
 select * from emp where deptno = 20 or deptno = 30;
 
--- 5.查询入职日期 (hiredate) 在 2001-01-01 之后的所有员工信息。
+-- 5. Hired after 2001-01-01.
 select * from emp where hiredate > '2001-01-01';
 
--- 6.查询奖金 (comm) 不为 NULL 的所有员工信息。
+-- 6. Has commission.
 select * from emp where comm is not null;
 
--- 7.查询职位 (job) 为 '销售员' 的所有员工信息。
-select * from emp where job ='销售员';
+-- 7. Salesperson.
+select * from emp where job = 'Salesperson';
 
--- 8.查询工资 (sal) 在 8000 到 20000 之间的所有员工信息。
+-- 8. Salary between 8000 and 20000.
 select * from emp where sal between 8000 and 20000;
 
--- 9.查询没有奖金 (comm 为 NULL) 且工资 (sal) 小于 15000 的所有员工信息。
-select * from emp where comm is null and sal<15000;
+-- 9. No commission and salary below 15000.
+select * from emp where comm is null and sal < 15000;
 
--- 10.查询所有员工信息，按工资 (sal) 降序排序。
+-- 10. Salary descending.
 select * from emp order by sal desc;

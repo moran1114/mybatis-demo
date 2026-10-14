@@ -1,4 +1,4 @@
-package dev.course.persistence.support;
+package com.demo2.support;
 
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.jdbc.ScriptRunner;
@@ -30,7 +30,7 @@ public final class EmbeddedDatabase {
                 run(runner, "data-h2.sql");
             }
         } catch (ClassNotFoundException | SQLException | IOException exception) {
-            throw new IllegalStateException("无法初始化内存测试数据库", exception);
+            throw new IllegalStateException("鏃犳硶鍒濆鍖栧唴瀛樻祴璇曟暟鎹簱", exception);
         }
     }
 
@@ -55,3 +55,4 @@ public final class EmbeddedDatabase {
                 + ";MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE";
     }
 }
+

@@ -7,7 +7,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="dev.course.persistence.mapper" level="debug" additivity="false">
+        <Logger name="com.demo2.mapper" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Root level="info">
@@ -15,3 +15,4 @@
         </Root>
     </Loggers>
 </Configuration>
+

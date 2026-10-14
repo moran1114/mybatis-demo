@@ -1,4 +1,4 @@
-package dev.course.persistence.util;
+package com.demo2.util;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
@@ -23,9 +23,8 @@ import java.util.Map;
 import java.util.Properties;
 
 public final class MyBatisUtil {
-
     private static final String CONFIG_RESOURCE = "mybatis-config.xml";
-    private static final String DATABASE_RESOURCE = "database.properties";
+    private static final String DATABASE_RESOURCE = "db.properties";
 
     private MyBatisUtil() {
     }
@@ -38,19 +37,16 @@ public final class MyBatisUtil {
         return MyBatisHolder.FACTORY.openSession(false);
     }
 
-    // 基础实验使用原生构建器，只执行 Mapper XML 中的 SQL。
     public static SqlSessionFactory buildMyBatis(Properties databaseProperties) {
         try (Reader reader = Resources.getResourceAsReader(CONFIG_RESOURCE)) {
             return new SqlSessionFactoryBuilder().build(reader, "local", databaseProperties);
         } catch (IOException exception) {
-            throw new IllegalStateException("无法构建 MyBatis SqlSessionFactory", exception);
+            throw new IllegalStateException("Unable to build MyBatis SqlSessionFactory", exception);
         }
     }
 
-    // 增强实验替换为 MP 构建器，注入 BaseMapper CRUD 并注册分页插件。
     public static SqlSessionFactory build(Properties databaseProperties, DbType databaseType) {
         try (Reader reader = Resources.getResourceAsReader(CONFIG_RESOURCE)) {
-            // MP 3.5.3.1 的默认泛型解析依赖 Spring；纯 Java 工程使用此解析器。
             GenericTypeUtils.setGenericTypeResolver(MyBatisUtil::resolveTypeArguments);
             SqlSessionFactory factory = new MybatisSqlSessionFactoryBuilder()
                     .build(reader, "local", databaseProperties);
@@ -64,7 +60,7 @@ public final class MyBatisUtil {
             factory.getConfiguration().addInterceptor(interceptor);
             return factory;
         } catch (IOException exception) {
-            throw new IllegalStateException("无法构建 MyBatis SqlSessionFactory", exception);
+            throw new IllegalStateException("Unable to build MyBatis-Plus SqlSessionFactory", exception);
         }
     }
 
@@ -74,7 +70,7 @@ public final class MyBatisUtil {
              Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             properties.load(reader);
         } catch (IOException exception) {
-            throw new IllegalStateException("无法读取数据库配置", exception);
+            throw new IllegalStateException("Unable to read database properties", exception);
         }
 
         override(properties, "LAB_DB_DRIVER", "jdbc.driver");
