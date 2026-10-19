@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo2.mapper.PublisherMapper">
+    <resultMap id="publisherWithBooksMap" type="com.demo2.entity.Publisher">
+        <id property="publisherId" column="publisher_id"/>
+        <result property="name" column="name"/>
+        <result property="city" column="city"/>
+        <collection property="books" ofType="com.demo2.entity.Book">
+            <id property="bookId" column="book_id"/>
+            <result property="title" column="book_title"/>
+            <result property="category" column="book_category"/>
+            <result property="publishedOn" column="book_published_on"/>
+            <result property="price" column="book_price"/>
+            <result property="discount" column="book_discount"/>
+            <result property="publisherId" column="book_publisher_id"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectWithBooks" resultMap="publisherWithBooksMap">
+        SELECT p.publisher_id, p.name, p.city,
+               b.book_id, b.title AS book_title, b.category AS book_category,
+               b.published_on AS book_published_on, b.price AS book_price,
+               b.discount AS book_discount, b.publisher_id AS book_publisher_id
+        FROM publisher p
+        LEFT JOIN book b ON b.publisher_id = p.publisher_id AND b.deleted = 0
+        WHERE p.publisher_id = #{publisherId}
+        ORDER BY b.book_id
+    </select>
+</mapper>

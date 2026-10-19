@@ -1,45 +1,40 @@
-INSERT INTO dept (deptno, dname, loc)
-VALUES
-    (10, 'Accounting', 'Beijing'),
-    (20, 'Technology', 'Shanghai'),
-    (30, 'Sales', 'Shenzhen'),
-    (40, 'QA', 'Hangzhou'),
-    (50, 'Support', 'Chengdu');
+INSERT INTO publisher (publisher_id, name, city) VALUES
+    (10, 'Northern Press', 'Beijing'),
+    (20, 'Tech House', 'Shanghai'),
+    (30, 'River Books', 'Shenzhen'),
+    (40, 'Open Shelf', 'Hangzhou'),
+    (50, 'Maple Press', 'Chengdu');
 
-INSERT INTO emp (empno, ename, job, mgr, hiredate, sal, comm, deptno)
-VALUES
-    (1, 'Lin Han', 'Engineer', 6, '2023-10-09', 14500.00, NULL, 20),
-    (2, 'Tang Ke', 'Salesperson', 6, '2001-01-01', 8000.00, 1500.00, 30),
-    (3, 'Xu Shu', 'Analyst', 6, '2002-08-08', 10000.00, NULL, 20),
-    (4, 'Zhou Qi', 'Salesperson', 6, '1999-05-20', 7000.00, 0.00, 30),
-    (5, 'Chen An', 'Accountant', 6, '2000-03-11', 15000.00, NULL, 10),
-    (6, 'Shen Zhi', 'Manager', NULL, '2000-11-23', 22000.00, 3000.00, 20),
-    (7, 'Zhao Ning', 'Salesperson', 6, '2024-06-01', 20000.00, 2000.00, 30),
-    (8, 'Wu Tong', 'Clerk', 6, '2024-07-15', 7500.00, NULL, 10);
+INSERT INTO book (book_id, title, category, published_on, price, discount, publisher_id) VALUES
+    (1, 'Java Foundations', 'Technology', '2023-10-09', 145.00, NULL, 20),
+    (2, 'City of Glass', 'Fiction', '2020-01-01', 80.00, 15.00, 30),
+    (3, 'SQL Handbook', 'Technology', '2022-08-08', 100.00, NULL, 20),
+    (4, 'Night Market', 'Fiction', '2019-05-20', 70.00, 0.00, 30),
+    (5, 'Ledger Basics', 'Finance', '2020-03-11', 150.00, NULL, 10),
+    (6, 'Cloud Atlas', 'Technology', '2021-11-23', 220.00, 30.00, 20),
+    (7, 'River Stories', 'Fiction', '2024-06-01', 200.00, 20.00, 30),
+    (8, 'Pocket Guide', 'Finance', '2024-07-15', 75.00, NULL, 10);
 
-INSERT INTO project (project_id, name, start_date, budget)
-VALUES
-    (101, 'Payment Gateway Refactor', '2024-03-01', 800000.00),
-    (102, 'Data Platform Construction', '2024-06-15', 1200000.00),
-    (103, 'Mobile App', '2025-01-10', 600000.00);
+INSERT INTO book_detail (book_id, isbn, language, summary, page_count) VALUES
+    (1, '9780000000001', 'English', 'An introduction to Java programming.', 420),
+    (2, '9780000000002', 'English', 'Stories of a changing city.', 280),
+    (3, '9780000000003', 'English', 'Practical SQL examples.', 310),
+    (4, '9780000000004', 'English', 'A city mystery.', 260),
+    (5, '9780000000005', 'English', 'Accounting principles.', 360),
+    (6, '9780000000006', 'English', 'Distributed systems in practice.', 510),
+    (7, '9780000000007', 'English', 'Stories by the river.', 330);
 
-INSERT INTO emp_detail (empno, phone, email, address, emergency_contact)
-VALUES
-    (1, '13800000001', 'lin.han@example.com', 'Shanghai, Pudong', 'Wang Lan'),
-    (2, '13800000002', 'tang.ke@example.com', 'Shenzhen, Nanshan', 'Tang Li'),
-    (3, '13800000003', 'xu.shu@example.com', 'Shanghai, Xuhui', 'Xu Feng'),
-    (4, '13800000004', 'zhou.qi@example.com', 'Shenzhen, Futian', 'Zhou Jie'),
-    (5, '13800000005', 'chen.an@example.com', 'Beijing, Chaoyang', 'Chen Jing'),
-    (6, '13800000006', 'shen.zhi@example.com', 'Shanghai, Jingan', 'Shen Yue'),
-    (7, '13800000007', 'zhao.ning@example.com', 'Shenzhen, Baoan', 'Zhao Min');
+INSERT INTO author (author_id, name, country, birth_date) VALUES
+    (101, 'Lin Han', 'China', '1980-03-01'),
+    (102, 'Tang Ke', 'China', '1985-09-16'),
+    (103, 'Xu Shu', 'China', '1978-12-03');
 
-INSERT INTO emp_project (empno, project_id, role)
-VALUES
-    (1, 101, 'Backend Engineer'),
-    (1, 102, 'Data Contributor'),
-    (3, 102, 'Data Analyst'),
-    (3, 103, 'Requirements Analyst'),
-    (6, 101, 'Project Manager'),
-    (6, 102, 'Tech Lead'),
-    (2, 103, 'Sales Support'),
-    (7, 103, 'UI Reviewer');
+INSERT INTO book_author (book_id, author_id, contribution) VALUES
+    (1, 101, 'Author'),
+    (1, 102, 'Co-author'),
+    (2, 103, 'Author'),
+    (3, 101, 'Author'),
+    (3, 103, 'Co-author'),
+    (6, 101, 'Author'),
+    (6, 102, 'Co-author'),
+    (7, 103, 'Author');

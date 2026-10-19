@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo2.mapper.AuthorMapper">
+    <resultMap id="authorWithBooksMap" type="com.demo2.entity.Author">
+        <id property="authorId" column="author_id"/>
+        <result property="name" column="name"/>
+        <result property="country" column="country"/>
+        <result property="birthDate" column="birth_date"/>
+        <collection property="books" ofType="com.demo2.entity.Book">
+            <id property="bookId" column="book_id"/>
+            <result property="title" column="book_title"/>
+            <result property="category" column="book_category"/>
+            <result property="publishedOn" column="book_published_on"/>
+            <result property="price" column="book_price"/>
+            <result property="discount" column="book_discount"/>
+            <result property="publisherId" column="book_publisher_id"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectWithBooks" resultMap="authorWithBooksMap">
+        SELECT a.author_id, a.name, a.country, a.birth_date,
+               b.book_id, b.title AS book_title, b.category AS book_category,
+               b.published_on AS book_published_on, b.price AS book_price,
+               b.discount AS book_discount, b.publisher_id AS book_publisher_id
+        FROM author a
+        LEFT JOIN book_author ba ON ba.author_id = a.author_id
+        LEFT JOIN book b ON b.book_id = ba.book_id AND b.deleted = 0
+        WHERE a.author_id = #{authorId}
+        ORDER BY b.book_id
+    </select>
+</mapper>

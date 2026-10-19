@@ -1,67 +1,54 @@
-DROP TABLE IF EXISTS emp_project;
-DROP TABLE IF EXISTS emp_lifecycle;
-DROP TABLE IF EXISTS emp_detail;
-DROP TABLE IF EXISTS project;
-DROP TABLE IF EXISTS emp;
-DROP TABLE IF EXISTS dept;
+DROP TABLE IF EXISTS book_author;
+DROP TABLE IF EXISTS book_detail;
+DROP TABLE IF EXISTS book;
+DROP TABLE IF EXISTS author;
+DROP TABLE IF EXISTS publisher;
 
-CREATE TABLE dept (
-    deptno INT PRIMARY KEY,
-    dname VARCHAR(50) NOT NULL,
-    loc VARCHAR(80) NOT NULL
+CREATE TABLE publisher (
+    publisher_id INT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    city VARCHAR(80) NOT NULL
 );
 
-CREATE TABLE emp (
-    empno BIGINT AUTO_INCREMENT PRIMARY KEY,
-    ename VARCHAR(50) NOT NULL,
-    job VARCHAR(60) NOT NULL,
-    mgr BIGINT NULL,
-    hiredate DATE NOT NULL,
-    sal DECIMAL(12, 2) NOT NULL CHECK (sal >= 0),
-    comm DECIMAL(12, 2) NULL CHECK (comm IS NULL OR comm >= 0),
-    deptno INT NOT NULL,
-    CONSTRAINT fk_emp_dept FOREIGN KEY (deptno) REFERENCES dept (deptno)
-);
-
-CREATE INDEX idx_emp_ename ON emp(ename);
-CREATE INDEX idx_emp_deptno ON emp(deptno);
-
-CREATE TABLE emp_lifecycle (
-    empno BIGINT AUTO_INCREMENT PRIMARY KEY,
-    ename VARCHAR(50) NOT NULL,
-    sal DECIMAL(12, 2) NOT NULL CHECK (sal >= 0),
-    deptno INT NOT NULL,
-    create_time TIMESTAMP(6) NOT NULL,
-    update_time TIMESTAMP(6) NOT NULL,
+CREATE TABLE book (
+    book_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(160) NOT NULL,
+    category VARCHAR(60) NOT NULL,
+    published_on DATE NOT NULL,
+    price DECIMAL(12, 2) NOT NULL CHECK (price >= 0),
+    discount DECIMAL(12, 2) NULL CHECK (discount IS NULL OR discount >= 0),
+    publisher_id INT NOT NULL,
+    create_time TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted INT NOT NULL DEFAULT 0 CHECK (deleted IN (0, 1)),
-    version INT NOT NULL DEFAULT 0
+    version INT NOT NULL DEFAULT 0,
+    CONSTRAINT fk_book_publisher FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id)
 );
-CREATE INDEX idx_emp_lifecycle_dept ON emp_lifecycle(deptno, deleted);
+CREATE INDEX idx_book_publisher ON book(publisher_id, deleted);
+CREATE INDEX idx_book_category ON book(category, deleted);
 
-CREATE TABLE project (
-    project_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(80) NOT NULL,
-    start_date DATE NOT NULL,
-    budget DECIMAL(14, 2) NOT NULL CHECK (budget >= 0)
+CREATE TABLE book_detail (
+    book_id BIGINT PRIMARY KEY,
+    isbn VARCHAR(20) NOT NULL UNIQUE,
+    language VARCHAR(40) NOT NULL,
+    summary VARCHAR(500),
+    page_count INT NOT NULL CHECK (page_count > 0),
+    CONSTRAINT fk_book_detail_book FOREIGN KEY (book_id) REFERENCES book(book_id)
 );
-CREATE INDEX idx_project_name ON project(name);
 
-CREATE TABLE emp_detail (
-    empno BIGINT PRIMARY KEY,
-    phone VARCHAR(20) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    address VARCHAR(200) NULL,
-    emergency_contact VARCHAR(50) NULL,
-    CONSTRAINT fk_emp_detail_emp FOREIGN KEY (empno) REFERENCES emp (empno)
+CREATE TABLE author (
+    author_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    country VARCHAR(60) NOT NULL,
+    birth_date DATE
 );
-CREATE INDEX idx_emp_detail_email ON emp_detail(email);
 
-CREATE TABLE emp_project (
-    empno BIGINT NOT NULL,
-    project_id INT NOT NULL,
-    role VARCHAR(50) NOT NULL,
-    PRIMARY KEY (empno, project_id),
-    CONSTRAINT fk_emp_project_emp FOREIGN KEY (empno) REFERENCES emp (empno),
-    CONSTRAINT fk_emp_project_project FOREIGN KEY (project_id) REFERENCES project (project_id)
+CREATE TABLE book_author (
+    book_id BIGINT NOT NULL,
+    author_id INT NOT NULL,
+    contribution VARCHAR(40) NOT NULL,
+    PRIMARY KEY (book_id, author_id),
+    CONSTRAINT fk_book_author_book FOREIGN KEY (book_id) REFERENCES book(book_id),
+    CONSTRAINT fk_book_author_author FOREIGN KEY (author_id) REFERENCES author(author_id)
 );
-CREATE INDEX idx_emp_project_project ON emp_project(project_id);
+CREATE INDEX idx_book_author_author ON book_author(author_id);

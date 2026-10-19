@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo2.mapper.BookMapper">
+    <resultMap id="bookMap" type="com.demo2.entity.Book">
+        <id property="bookId" column="book_id"/>
+        <result property="title" column="title"/>
+        <result property="category" column="category"/>
+        <result property="publishedOn" column="published_on"/>
+        <result property="price" column="price"/>
+        <result property="discount" column="discount"/>
+        <result property="publisherId" column="publisher_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
+    </resultMap>
+
+    <resultMap id="bookProjectionMap" type="com.demo2.entity.Book" autoMapping="false">
+        <result property="title" column="title"/>
+        <result property="price" column="price"/>
+        <result property="publisherId" column="publisher_id"/>
+    </resultMap>
+
+    <sql id="plainBookColumns">
+        book_id, title, category, published_on, price, discount,
+        publisher_id, create_time, update_time, deleted, version
+    </sql>
+
+    <select id="selectAllBooks" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book WHERE deleted = 0 ORDER BY book_id
+    </select>
+    <select id="selectTitlePricePublisher" resultMap="bookProjectionMap">
+        SELECT title, price, publisher_id FROM book WHERE deleted = 0 ORDER BY book_id
+    </select>
+    <select id="selectPriceAbove100" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book WHERE deleted = 0 AND price &gt; 100 ORDER BY book_id
+    </select>
+    <select id="selectPublisher20Or30" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE deleted = 0 AND (publisher_id = 20 OR publisher_id = 30) ORDER BY book_id
+    </select>
+    <select id="selectPublishedAfter2021" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE deleted = 0 AND published_on &gt; '2021-01-01' ORDER BY book_id
+    </select>
+    <select id="selectWithDiscount" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE deleted = 0 AND discount IS NOT NULL ORDER BY book_id
+    </select>
+    <select id="selectFiction" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE deleted = 0 AND category = 'Fiction' ORDER BY book_id
+    </select>
+    <select id="selectPriceBetween80And200" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE deleted = 0 AND price BETWEEN 80 AND 200 ORDER BY book_id
+    </select>
+    <select id="selectWithoutDiscountAndPriceBelow150" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE deleted = 0 AND discount IS NULL AND price &lt; 150 ORDER BY book_id
+    </select>
+    <select id="selectOrderByPriceDesc" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE deleted = 0 ORDER BY price DESC, book_id
+    </select>
+
+    <select id="selectBookById" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        WHERE book_id = #{bookId} AND deleted = 0
+    </select>
+
+    <insert id="insertBook" useGeneratedKeys="true" keyProperty="bookId" keyColumn="book_id">
+        INSERT INTO book (title, category, published_on, price, discount, publisher_id)
+        VALUES (#{title}, #{category}, #{publishedOn}, #{price}, #{discount}, #{publisherId})
+    </insert>
+
+    <update id="updateBook">
+        UPDATE book
+        SET title = #{title}, category = #{category}, published_on = #{publishedOn},
+            price = #{price}, discount = #{discount}, publisher_id = #{publisherId},
+            update_time = CURRENT_TIMESTAMP
+        WHERE book_id = #{bookId} AND deleted = 0
+    </update>
+
+    <delete id="deleteBookById">
+        DELETE FROM book WHERE book_id = #{bookId}
+    </delete>
+
+    <sql id="bookConditions">
+        <if test="query != null and query.title != null and query.title != ''">
+            AND title LIKE CONCAT('%', #{query.title}, '%')
+        </if>
+        <if test="query != null and query.category != null and query.category != ''">
+            AND category = #{query.category}
+        </if>
+        <if test="query != null and query.publisherId != null">
+            AND publisher_id = #{query.publisherId}
+        </if>
+        <if test="query != null and query.minPrice != null">
+            AND price &gt;= #{query.minPrice}
+        </if>
+    </sql>
+
+    <select id="selectByCondition" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        <where>deleted = 0 <include refid="bookConditions"/></where>
+        ORDER BY price DESC, book_id
+    </select>
+
+    <select id="selectByConditionWithTrim" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        <trim prefix="WHERE" prefixOverrides="AND |OR ">
+            deleted = 0 <include refid="bookConditions"/>
+        </trim>
+        ORDER BY price DESC, book_id
+    </select>
+
+    <select id="selectSorted" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book WHERE deleted = 0
+        ORDER BY
+        <choose>
+            <when test="sort != null">${sort.column}</when>
+            <otherwise>book_id</otherwise>
+        </choose>
+        DESC
+    </select>
+
+    <update id="updatePartial">
+        UPDATE book
+        <set>
+            update_time = CURRENT_TIMESTAMP,
+            <if test="title != null">title = #{title},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="publishedOn != null">published_on = #{publishedOn},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="discount != null">discount = #{discount},</if>
+            <if test="publisherId != null">publisher_id = #{publisherId},</if>
+        </set>
+        WHERE book_id = #{bookId} AND deleted = 0
+    </update>
+
+    <insert id="insertBatch">
+        INSERT INTO book (title, category, published_on, price, discount, publisher_id)
+        VALUES
+        <foreach collection="items" item="item" separator=",">
+            (#{item.title}, #{item.category}, #{item.publishedOn},
+             #{item.price}, #{item.discount}, #{item.publisherId})
+        </foreach>
+    </insert>
+
+    <delete id="deleteBatch">
+        DELETE FROM book
+        <choose>
+            <when test="ids != null and ids.size() > 0">
+                WHERE book_id IN
+                <foreach collection="ids" item="bookId" open="(" separator="," close=")">
+                    #{bookId}
+                </foreach>
+            </when>
+            <otherwise>WHERE 1 = 0</otherwise>
+        </choose>
+    </delete>
+
+    <select id="selectPreferred" resultMap="bookMap">
+        SELECT <include refid="plainBookColumns"/> FROM book
+        <where>
+            deleted = 0
+            <choose>
+                <when test="exactTitle != null and exactTitle != ''">
+                    AND title = #{exactTitle}
+                </when>
+                <when test="publisherId != null">
+                    AND publisher_id = #{publisherId}
+                </when>
+            </choose>
+        </where>
+        ORDER BY book_id
+    </select>
+
+    <resultMap id="bookWithDetailMap" type="com.demo2.entity.Book" extends="bookMap">
+        <association property="detail" javaType="com.demo2.entity.BookDetail">
+            <id property="bookId" column="detail_book_id"/>
+            <result property="isbn" column="detail_isbn"/>
+            <result property="language" column="detail_language"/>
+            <result property="summary" column="detail_summary"/>
+            <result property="pageCount" column="detail_page_count"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="bookWithPublisherMap" type="com.demo2.entity.Book" extends="bookMap">
+        <association property="publisher" javaType="com.demo2.entity.Publisher">
+            <id property="publisherId" column="pub_id"/>
+            <result property="name" column="pub_name"/>
+            <result property="city" column="pub_city"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="bookWithAuthorsMap" type="com.demo2.entity.Book" extends="bookMap">
+        <collection property="authors" ofType="com.demo2.entity.Author">
+            <id property="authorId" column="author_id"/>
+            <result property="name" column="author_name"/>
+            <result property="country" column="author_country"/>
+            <result property="birthDate" column="author_birth_date"/>
+        </collection>
+    </resultMap>
+
+    <sql id="bookColumns">
+        b.book_id, b.title, b.category, b.published_on, b.price, b.discount,
+        b.publisher_id, b.create_time, b.update_time, b.deleted, b.version
+    </sql>
+
+    <select id="selectWithDetail" resultMap="bookWithDetailMap">
+        SELECT <include refid="bookColumns"/>,
+               d.book_id AS detail_book_id, d.isbn AS detail_isbn,
+               d.language AS detail_language, d.summary AS detail_summary,
+               d.page_count AS detail_page_count
+        FROM book b
+        LEFT JOIN book_detail d ON d.book_id = b.book_id
+        WHERE b.book_id = #{bookId} AND b.deleted = 0
+    </select>
+
+    <select id="selectWithPublisher" resultMap="bookWithPublisherMap">
+        SELECT <include refid="bookColumns"/>,
+               p.publisher_id AS pub_id, p.name AS pub_name, p.city AS pub_city
+        FROM book b
+        JOIN publisher p ON p.publisher_id = b.publisher_id
+        WHERE b.book_id = #{bookId} AND b.deleted = 0
+    </select>
+
+    <select id="selectWithAuthors" resultMap="bookWithAuthorsMap">
+        SELECT <include refid="bookColumns"/>,
+               a.author_id, a.name AS author_name, a.country AS author_country,
+               a.birth_date AS author_birth_date
+        FROM book b
+        LEFT JOIN book_author ba ON ba.book_id = b.book_id
+        LEFT JOIN author a ON a.author_id = ba.author_id
+        WHERE b.book_id = #{bookId} AND b.deleted = 0
+        ORDER BY a.author_id
+    </select>
+</mapper>

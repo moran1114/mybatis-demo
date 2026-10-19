@@ -1,488 +1,93 @@
 # MyBatis Demo 项目文件功能说明
 
-## 1. 项目定位
+更新日期：2026-10-19。本项目以图书系统为唯一业务示例，保留纯 MyBatis 与 MyBatis-Plus 两套教学入口。Java 11、MySQL 8 用于本地演示；自动测试使用 H2 的 MySQL 兼容模式。
 
-本项目用于演示 MyBatis 和 MyBatis-Plus 的基本用法，内容包括：
-
-- 普通 MyBatis XML Mapper 查询
-- 员工表的增删改查
-- 动态 SQL
-- 批量插入和批量删除
-- `choose` 分支查询
-- MyBatis-Plus `BaseMapper`
-- Lambda 条件构造器
-- OR 嵌套、部分字段、Map 结果、分组聚合和字段更新策略
-- 分页查询
-- 自动填充、逻辑删除和乐观锁
-- H2 内存数据库测试
-- Mapper 错误诊断测试
-
-项目的主要调用关系如下：
+## 项目结构
 
 ```text
-MyBatisEmpDemo 或 JUnit 测试
-            |
-            v
-       MyBatisUtil
-            |
-            v
- SqlSessionFactory / SqlSession
-            |
-            v
-         EmpMapper
-        /         \
-EmpMapper.xml   BaseMapper<Emp>
-        \         /
-            v
-       emp / dept 数据表
+pom.xml
+README.md
+sql/
+  book-basic-queries.sql
+src/main/java/com/demo2/
+  entity/Author.java, Book.java, BookDetail.java, BookQuery.java, Publisher.java
+  mapper/AuthorMapper.java, BookMapper.java, PublisherMapper.java
+  handler/AuditMetaObjectHandler.java
+  util/BookXmlDemo.java, LibraryDemo.java, MyBatisUtil.java
+src/main/resources/
+  db-defaults.properties, mybatis-config.xml, log4j2.xml
+  mapper/AuthorMapper.xml, BookMapper.xml, PublisherMapper.xml
+  sql/reload_library.sql
+src/test/java/com/demo2/
+  mapper/BookBasicQueryTest.java, BookXmlMapperTest.java
+  mapper/LibraryMapperTest.java, BookAdvancedQueryTest.java
+  mapper/BookLifecycleTest.java, BookFaultDiagnosisTest.java
+  support/EmbeddedDatabase.java
+src/test/resources/
+  schema-h2.sql, data-h2.sql
+docs/
+  library-demo.md, 08-02-query-wrapper.md, 08-03-pagination-lifecycle.md
+  project-file-guide.md, experiment-report.md
 ```
 
-## 2. 主代码目录
+### 根目录
 
-主代码位于 `src/main/java/com/demo2` 下。
-
-### 2.1 `entity` 实体类
-
-实体类负责表示数据库记录、查询条件或查询结果。它们本身通常不负责执行 SQL。
-
-#### `Dept.java`
-
-部门实体，对应数据库中的 `dept` 表。
-
-主要字段：
-
-- `deptno`：部门编号，主键
-- `dname`：部门名称
-- `loc`：部门所在地
-
-类上的 `@TableName("dept")`、`@TableId` 和 `@TableField` 注解用于 MyBatis-Plus 的表名和字段映射。
-
-#### `Emp.java`
-
-员工实体，对应数据库中的 `emp` 表，是项目中最主要的实体类。
-
-主要字段：
-
-- `empno`：员工编号，使用自增主键
-- `ename`：员工姓名
-- `job`：职位
-- `mgr`：上级经理编号
-- `hiredate`：入职日期
-- `sal`：工资
-- `comm`：奖金
-- `deptno`：部门编号
-
-类上的 MyBatis-Plus 注解用于完成 `Emp` 与 `emp` 表之间的映射，其中 `empno` 使用 `IdType.AUTO` 表示由数据库生成主键。
-
-#### `EmpBrief.java`
-
-员工简要信息对象，只包含：
-
-- 员工姓名
-- 工资
-- 部门编号
-
-它适合接收只查询部分字段的结果，避免每次都返回完整的 `Emp` 对象。目前 `selectNameSalDeptno` 的 XML 映射仍使用 `Emp` 的 `empSummaryMap`，因此 `EmpBrief` 是可复用的结果 DTO，但暂未被当前 Mapper 方法直接使用。
-
-#### `EmpManagerView.java`
-
-员工与经理关联查询的结果对象，包含：
-
-- 员工编号和姓名
-- 经理编号和姓名
-
-它适合处理 `emp` 表自关联查询，例如查询“员工对应的经理”。当前项目暂未配置对应的 Mapper 查询，属于预留的查询结果对象。
-
-#### `DeptPayrollSummary.java`
-
-部门工资统计结果对象，包含：
-
-- 部门编号
-- 部门名称
-- 员工数量
-- 工资总额
-- 平均工资
-
-它适合接收 `GROUP BY deptno`、`COUNT`、`SUM`、`AVG` 等统计查询结果。当前项目暂未配置对应的统计 Mapper 方法。
-
-#### `EmpQuery.java`
-
-员工查询条件对象，字段包括：
-
-- `ename`：姓名条件
-- `job`：职位条件
-- `deptno`：部门条件
-- `minSal`：最低工资条件
-
-该类还定义了 `SortColumn` 枚举：
-
-- `EMPNO`
-- `SAL`
-- `HIREDATE`
-
-枚举用于限制动态排序字段，避免把用户输入直接拼接到 `ORDER BY` 中。当前 `EmpMapper.selectSorted` 使用了这个枚举；动态多条件查询目前主要使用 `Emp` 作为条件对象。
-
-### 2.2 `mapper/EmpMapper.java`
-
-`EmpMapper` 是数据库操作接口，负责声明可以执行的数据库方法。
-
-它继承 `BaseMapper<Emp>`，因此同时拥有两类能力：
-
-#### 普通 MyBatis 方法
-
-- 基础查询：查询全部员工、指定字段、工资范围、部门、日期和奖金条件
-- 单条查询：根据员工编号查询
-- 基础增删改：插入、更新和删除员工
-- 动态条件查询：按姓名、职位、部门和工资等条件组合查询
-- 动态排序：按员工编号、工资或入职日期排序
-- 动态更新：只更新不为空的字段
-- 批量插入和批量删除
-- `choose` 分支查询
-
-#### MyBatis-Plus 方法
-
-继承 `BaseMapper<Emp>` 后，可以直接使用：
-
-- `insert`
-- `selectById`
-- `updateById`
-- `deleteById`
-- `selectList`
-- `selectPage`
-
-接口中的 `countByDeptno` 使用注解 `@Select` 直接声明 SQL，其他普通方法主要由 `EmpMapper.xml` 提供 SQL 实现。
-
-### 2.3 `util/MyBatisUtil.java`
-
-MyBatis 配置和会话工厂工具类，负责把配置文件、数据库连接和 Mapper 组合起来。
-
-主要功能：
-
-- 读取 `mybatis-config.xml`
-- 读取 `db.properties`
-- 创建普通 MyBatis 的 `SqlSessionFactory`
-- 创建 MyBatis-Plus 的 `SqlSessionFactory`
-- 打开数据库会话 `SqlSession`
-- 根据当前环境覆盖数据库连接参数
-- 配置 MyBatis-Plus 分页拦截器
-- 注册 `AuditMetaObjectHandler`、`EmpLifecycleMapper` 和乐观锁插件；分页插件放在最后
-- 支持 H2 测试数据库和 MySQL 运行环境
-
-常用方法：
-
-- `openSession()`：打开默认数据库会话
-- `openMyBatisSession()`：打开普通 MyBatis 会话
-- `buildMyBatis(...)`：构建普通 MyBatis 工厂
-- `build(...)`：构建带 MyBatis-Plus 配置的工厂
-- `localDatabaseProperties()`：读取本地数据库配置
-
-### 2.4 `util/MyBatisEmpDemo.java`
-
-控制台演示程序，包含 `main` 方法，可以直接观察查询结果。
-
-它分为两个演示部分：
-
-#### 普通 MyBatis 演示
-
-- 基础查询
-- 单条查询
-- 员工增删改查
-- 动态条件查询
-- 动态更新
-- 批量插入
-- 批量删除
-- 部门数量统计
-- 动态排序
-
-#### MyBatis-Plus 演示
-
-- `BaseMapper` 通用 CRUD
-- Lambda 条件构造器
-- 分页查询
-
-## 3. Mapper XML 和其他主资源
-
-### `src/main/resources/mapper/EmpMapper.xml`
-
-这是普通 MyBatis 的核心 SQL 文件，命名空间对应 `com.demo2.mapper.EmpMapper`。
-
-主要内容：
-
-- `empMap`：完整员工字段映射
-- `empSummaryMap`：姓名、工资、部门编号的部分字段映射
-- `empColumns`：员工字段 SQL 片段
-- 10 条基础查询
-- 员工增删改查
-- `<if>` 和 `<where>` 多条件查询
-- `<trim>` 清理动态 SQL 的多余 `AND`
-- `<set>` 动态更新
-- `<foreach>` 批量插入和批量删除
-- `<choose>`、`<when>`、`<otherwise>` 分支查询
-
-### `src/main/resources/mapper/UserMapper.xml`
-
-当前是一个预留的 Mapper XML 文件，声明了 `com.demo2.mapper.UserMapper` 命名空间，但项目中暂时没有对应的 `UserMapper.java` 和具体 SQL。
-
-### `src/main/resources/mybatis-config.xml`
-
-MyBatis 全局配置文件，负责：
-
-- 加载数据库属性
-- 配置实体类别名
-- 配置驼峰命名转换
-- 注册 `EmpMapper.xml`
-- 设置数据库环境
-
-### `src/main/resources/db.properties`
-
-保存数据库连接配置，例如：
-
-- JDBC 驱动
-- 数据库 URL
-- 用户名
-- 密码
-
-### `src/main/resources/sql/reload_emp_dept.sql`
-
-用于 MySQL 环境初始化或重新加载 `dept`、`emp` 表结构和示例数据。
-
-### `sql/basic-queries.sql`
-
-保存 10 条经典基础查询语句，包括：
-
-1. 查询所有员工
-2. 查询指定字段
-3. 按工资筛选
-4. 按部门筛选
-5. 按入职日期筛选
-6. 查询有奖金的员工
-7. 按职位筛选
-8. 工资范围查询
-9. 奖金为空且工资较低的员工查询
-10. 按工资降序排序
-
-`EmpBasicQueryTest` 会读取这个文件，并把原始 SQL 的结果和 Mapper 查询结果进行对比。
-
-### `src/main/resources/log4j2.xml`
-
-Log4j2 日志配置文件，用于输出 MyBatis 执行的 SQL、参数和查询结果数量，方便观察 SQL 是否正确。
-
-## 4. 测试代码
-
-测试代码位于 `src/test/java/com/demo2` 下。
-
-### `support/EmbeddedDatabase.java`
-
-测试数据库辅助类，使用 H2 创建内存数据库。
-
-主要工作：
-
-- 创建独立的 H2 数据库
-- 执行 `schema-h2.sql` 创建表
-- 执行 `data-h2.sql` 插入测试数据
-- 生成测试用数据库连接属性
-
-不同测试类使用不同数据库名称，避免测试数据相互影响。
-
-### `mapper/EmpBasicQueryTest.java`
-
-基础 SQL 查询测试，使用参数化测试方式运行 10 组查询。
-
-每组测试会：
-
-1. 从 `sql/basic-queries.sql` 读取一条原始 SQL
-2. 直接执行原始 SQL
-3. 调用 `EmpMapper` 中对应的查询方法
-4. 比较两种方式返回的员工结果
-
-它主要验证基础 SQL 和 Mapper SQL 是否保持一致。
-
-### `mapper/EmpMapperTest.java`
-
-普通 MyBatis 功能测试，共 10 个测试方法，覆盖：
-
-- 员工完整 CRUD
-- 生成数据库自增主键
-- `if / where` 多条件查询
-- 空条件和空字符串处理
-- `trim` 动态 SQL
-- 参数绑定和 SQL 注入防护
-- 动态排序字段限制
-- `<set>` 动态更新
-- `<foreach>` 批量插入
-- `<foreach>` 批量删除
-- 空集合删除保护
-- `<choose>` 分支查询
-- 下划线字段到驼峰属性的映射
-
-这是动态 SQL 课程内容最主要的测试类。
-
-### `mapper/EmpMyBatisPlusTest.java`
-
-MyBatis-Plus 功能测试，共 2 个测试方法。
-
-主要验证：
-
-- `BaseMapper` 的新增、查询、修改和删除
-- Lambda 条件构造器
-- 按部门和工资组合查询
-- 分页查询
-- 总记录数、总页数和当前页数据
-- 超出最后一页时返回空结果
-
-### `mapper/FaultDiagnosisTest.java`
-
-Mapper 错误诊断测试，共 4 个测试方法。
-
-它会临时修改 Mapper XML，模拟常见错误，并检查 MyBatis 是否抛出正确异常：
-
-- 实体属性名称错误：测试参数绑定异常
-- 命名参数名称错误：测试 `BindingException`
-- 结果字段映射错误：测试属性是否保持为空
-- 缺少自动生成主键配置：测试数据虽然插入，但实体主键不会自动回填
-
-## 5. 测试资源
-
-### `src/test/resources/schema-h2.sql`
-
-创建 H2 测试数据库的表结构，包括：
-
-- `dept` 部门表
-- `emp` 员工表
-- 主键约束
-- 员工到部门的外键约束
-- 工资和奖金检查约束
-- 员工姓名和部门编号索引
-
-### `src/test/resources/data-h2.sql`
-
-插入测试使用的部门和员工数据。
-
-测试数据包含不同的：
-
-- 部门编号
-- 职位
-- 工资
-- 奖金为空和不为空的情况
-- 不同入职日期
-- 经理关系
-
-这些差异保证各种查询条件都能得到有意义的测试结果。
-
-## 6. 课程步骤对应关系
-
-| 课程内容 | 主要实现位置 | 主要测试 |
-| --- | --- | --- |
-| `if / where` 多条件查询 | `EmpMapper.xml` 的 `empConditions`、`selectByCondition` | `EmpMapperTest` |
-| `set` 动态更新 | `EmpMapper.xml` 的 `updatePartial` | `EmpMapperTest` |
-| `foreach` 批量插入和删除 | `insertBatch`、`deleteBatch` | `EmpMapperTest` |
-| `choose / when / otherwise` | `selectPreferred`、`selectSorted` | `EmpMapperTest` |
-| MyBatis-Plus 配置 | `MyBatisUtil`、`mybatis-config.xml` | `EmpMyBatisPlusTest` |
-| 实体注解映射 | `Emp`、`Dept` | `EmpMyBatisPlusTest` |
-| `BaseMapper` 通用 CRUD | `EmpMapper extends BaseMapper<Emp>` | `EmpMyBatisPlusTest` |
-| Lambda 条件构造器 | `LambdaQueryWrapper` | `EmpMyBatisPlusTest` |
-| 分页插件 | `PaginationInnerInterceptor` | `EmpMyBatisPlusTest` |
-
-## 7. 测试统计
-
-当前 Maven 测试共 51 个测试：
-
-- `EmpBasicQueryTest`：10 个
-- `EmpMapperTest`：10 个
-- `EmpMyBatisPlusTest`：2 个
-- `FaultDiagnosisTest`：4 个
-- `RelationQueryTest`：6 个
-- `EmpAdvancedQueryTest`：11 个
-- `EmpLifecycleTest`：8 个
-
-运行命令：
-
-```bash
-mvn test
-```
-
-测试成功时应显示：
-
-```text
-Tests run: 51, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
-```
-
-## 8. 当前项目的使用特点
-
-1. 普通 MyBatis 主要通过 `EmpMapper.xml` 编写 SQL。
-2. MyBatis-Plus 主要通过实体注解和 `BaseMapper` 自动生成通用 SQL。
-3. H2 只用于自动化测试，不会修改真实 MySQL 数据库。
-4. `EmpBrief`、`EmpManagerView` 和 `DeptPayrollSummary` 是为部分字段查询、关联查询和统计查询准备的 DTO，目前还没有对应的 Mapper 方法。
-5. `EmpBasicQueryTest` 验证经典 SQL，`EmpMapperTest` 验证动态 SQL，`EmpMyBatisPlusTest` 验证 MyBatis-Plus，`FaultDiagnosisTest` 验证错误配置，`RelationQueryTest` 验证关联查询。
-
-## 9. 关联查询演示（一对多 / 一对一 / 多对多）
-
-新增三张表支持关联查询，MySQL 建表脚本为 `src/main/resources/sql/reload_relations.sql`（需先执行 `reload_emp_dept.sql`），H2 测试库对应 `schema-h2.sql` / `data-h2.sql`：
-
-| 表 | 关系 | 说明 |
-| --- | --- | --- |
-| `emp_detail` | 一对一 | 员工详情，共享主键 `empno`（外键指向 `emp`） |
-| `project` | 多对多 | 项目表 |
-| `emp_project` | 多对多 | 员工-项目连接表，复合主键 `(empno, project_id)` |
-
-### 实体关联字段
-
-`Emp` 增加 `detail`（一对一）和 `projects`（多对多），`Dept` 增加 `emps`（一对多），`Project` 增加 `members`。这些字段都标注 `@TableField(exist = false)`，避免 MyBatis-Plus `BaseMapper` 把它们误当成表列；`toString` 均不打印关联字段，防止双向引用递归。
-
-### Mapper 与 resultMap
-
-- `DeptMapper.selectDeptWithEmps`：`dept LEFT JOIN emp`，`<collection property="emps">` 一对多合并
-- `EmpMapper.selectEmpWithDetail`：`emp LEFT JOIN emp_detail`，`<association property="detail">` 一对一
-- `EmpMapper.selectEmpWithProjects`：`emp → emp_project → project` 三表 LEFT JOIN，`<collection property="projects">` 多对多
-- `ProjectMapper.selectProjectWithMembers`：反方向多对多，`<collection property="members">`
-
-关联查询复用了 `EmpMapper.xml` 的 `empMap`（`extends="empMap"`）；JOIN 时同名列用别名区分（`detail_empno`、`emp_deptno`、`project_name`）。
-
-### 交互终端
-
-`MyBatisRelationDemo`（`com.demo2.util`）是菜单式交互终端，在 IDEA 中直接运行 main 方法：
-
-1. 一对多：输入部门编号，查询部门及其员工列表
-2. 一对一：输入员工编号，查询员工及其详情档案
-3. 多对多：输入员工编号，查询员工参与的项目
-4. 多对多：输入项目编号，查询项目成员
-0. 退出
-
-程序对查无此编号、无详情、空集合等场景给出中文提示，只读查询不修改数据。
-
-## 10. 第二节：条件构造器与高级查询
-
-详细讲义：[08-02-query-wrapper.md](08-02-query-wrapper.md)。
-
-`util/MyBatisPlusQueryDemo.java` 是本节控制台入口，按 8.2.1—8.2.8 展示链式 WHERE、OR 嵌套、Lambda 可选条件、`selectCount/selectOne`、部分字段与 `selectMaps`、`GROUP BY/HAVING`、`selectByMap` 和条件更新。
-
-`Emp.comm` 显式配置 `updateStrategy = FieldStrategy.NOT_NULL`，对比实体 null 跳过更新、0 正常更新和 Wrapper 显式清空。`EmpAdvancedQueryTest` 的 11 个测试验证这些结果及完整演示入口；演示及测试中的修改均回滚。
-
-## 11. 第三节：分页、自动填充、逻辑删除与乐观锁
-
-详细讲义：[08-03-pagination-lifecycle.md](08-03-pagination-lifecycle.md)。
-
-| 文件 | 作用 |
+| 文件 | 功能 |
 | --- | --- |
-| `entity/EmpLifecycle.java` | 独立映射 `emp_lifecycle`，含 `createTime/updateTime`、`@TableLogic deleted` 和 `@Version version` |
-| `mapper/EmpLifecycleMapper.java` | 继承 BaseMapper，由 MyBatis-Plus 工厂手动注册 |
-| `handler/AuditMetaObjectHandler.java` | 插入填充时间，更新覆盖旧的更新时间；可注入 Clock 便于测试 |
-| `util/MyBatisUtil.java` | 注册处理器与“乐观锁 → 分页”插件链 |
-| `util/MyBatisPlusLifecycleDemo.java` | 分页、自动填充、删除后物理行验证、两个旧快照的版本冲突演示 |
-| `src/main/resources/sql/init_emp_lifecycle.sql` | MySQL 创建实验表，不清空已有数据 |
-| `mapper/EmpLifecycleTest.java`（测试目录） | 8 个测试，覆盖时间填充、逻辑删除、冲突、Wrapper 更新边界与分页 |
+| [pom.xml](../pom.xml) | 声明 Java 11、MyBatis-Plus、MySQL 驱动、Log4j2、JUnit 4、H2 和 Maven 插件。 |
+| [README.md](../README.md) | 最短运行步骤、测试命令与各演示入口。 |
+| [book-basic-queries.sql](../sql/book-basic-queries.sql) | 10 条从投影、条件、NULL 到排序的基础 SQL；每条都有 `BookMapper` 方法对应。 |
 
-`emp_lifecycle` 是独立实验表，由本节示例自行插入记录。H2 表结构已纳入 `schema-h2.sql`；原来的 `emp` 继续承担基础 CRUD 和关联查询。本节 MySQL 入口运行前需执行新增建表脚本，入口结束时回滚事务。
+### Java 实体与 Mapper
 
-两章一起验证，在 PowerShell / CMD 终端执行：
+| 文件 | 功能 |
+| --- | --- |
+| [Book.java](../src/main/java/com/demo2/entity/Book.java) | `book` 表实体。`@TableId(AUTO)`、`@TableField(updateStrategy = NOT_NULL)`、审计字段、`@TableLogic`、`@Version` 定义通用操作行为；`publisher`、`detail`、`authors` 是非表字段。 |
+| [Publisher.java](../src/main/java/com/demo2/entity/Publisher.java) | 出版社及其书籍集合。 |
+| [BookDetail.java](../src/main/java/com/demo2/entity/BookDetail.java) | 与书籍共享主键的详情，保证一本书至多一条详情。 |
+| [Author.java](../src/main/java/com/demo2/entity/Author.java) | 作者及其书籍集合。 |
+| [BookQuery.java](../src/main/java/com/demo2/entity/BookQuery.java) | 纯 MyBatis 动态查询条件；`SortColumn` 枚举是动态排序的列名白名单。 |
+| [BookMapper.java](../src/main/java/com/demo2/mapper/BookMapper.java) | 同时声明 XML/注解方法并继承 `BaseMapper<Book>`。包含 10 条查询、CRUD、动态 SQL、批量操作和书籍侧关联查询。 |
+| [PublisherMapper.java](../src/main/java/com/demo2/mapper/PublisherMapper.java) | 出版社到书籍的一对多查询。 |
+| [AuthorMapper.java](../src/main/java/com/demo2/mapper/AuthorMapper.java) | 作者到书籍的多对多查询。 |
 
-```powershell
-mvn "-Dtest=EmpAdvancedQueryTest,EmpLifecycleTest" test
-```
+### 配置、XML 与建表数据
 
-在 IDEA 的 Maven 运行配置参数栏中使用以下内容，不填写 `mvn`，也不要加单引号：
+| 文件 | 功能 |
+| --- | --- |
+| [mybatis-config.xml](../src/main/resources/mybatis-config.xml) | 数据源、驼峰映射、SQL 日志及三个 Mapper XML 的注册。 |
+| [db-defaults.properties](../src/main/resources/db-defaults.properties) | 可提交的连接占位配置，使 H2 测试在新检出的工程中也能构建。实际 MySQL 凭据放在被 Git 忽略的 `db.properties`，或使用环境变量。 |
+| [log4j2.xml](../src/main/resources/log4j2.xml) | 输出 SQL 与参数，便于观察动态 SQL 和插件改写。 |
+| [BookMapper.xml](../src/main/resources/mapper/BookMapper.xml) | 10 条基础查询、结果映射、主键回填、CRUD、`where/trim/set/foreach/choose`、书籍到详情/出版社/作者的关联查询。 |
+| [PublisherMapper.xml](../src/main/resources/mapper/PublisherMapper.xml) | 使用 `LEFT JOIN` 与 `<collection>` 映射出版社下的书籍。 |
+| [AuthorMapper.xml](../src/main/resources/mapper/AuthorMapper.xml) | 通过 `book_author` 映射作者下的书籍。 |
+| [reload_library.sql](../src/main/resources/sql/reload_library.sql) | 在 MySQL 中重建图书数据模型及样例；同时清理旧实验表。脚本会删除原有数据。 |
 
-```text
--Dtest=EmpAdvancedQueryTest,EmpLifecycleTest test
-```
+### 运行入口与测试
+
+| 文件 | 功能 |
+| --- | --- |
+| [MyBatisUtil.java](../src/main/java/com/demo2/util/MyBatisUtil.java) | 构建纯 MyBatis 和 MyBatis-Plus `SqlSessionFactory`；后者配置乐观锁、最大 100 条的物理分页及自动填充。 |
+| [AuditMetaObjectHandler.java](../src/main/java/com/demo2/handler/AuditMetaObjectHandler.java) | 插入时写入创建/修改时间，更新实体时刷新修改时间；可注入固定时钟供测试使用。 |
+| [BookXmlDemo.java](../src/main/java/com/demo2/util/BookXmlDemo.java) | 顺序演示 10 条查询、动态 SQL、XML CRUD 与批量操作，演示结束回滚。 |
+| [LibraryDemo.java](../src/main/java/com/demo2/util/LibraryDemo.java) | 交互式菜单：四种关系、条件与聚合、分页、审计字段、逻辑删除和版本冲突。 |
+| [EmbeddedDatabase.java](../src/test/java/com/demo2/support/EmbeddedDatabase.java) | 创建独立内存数据库、执行 H2 建表和样例数据脚本。 |
+| [schema-h2.sql](../src/test/resources/schema-h2.sql)、[data-h2.sql](../src/test/resources/data-h2.sql) | 测试用的五张图书表和与 MySQL 一致的样例。 |
+| `BookBasicQueryTest` | 10 组参数化用例，逐条比较独立 SQL 文件与 Mapper 结果。 |
+| `BookXmlMapperTest` | 验证主键回填、XML CRUD、动态 SQL、安全排序、部分更新、批量操作及控制台示例。 |
+| `LibraryMapperTest` | 验证一对多、一对一、多对一、双向多对多和空关联。 |
+| `BookAdvancedQueryTest` | 验证 QueryWrapper/Lambda、OR 嵌套、计数、单条、投影、Map、聚合与字段策略。 |
+| `BookLifecycleTest` | 验证分页、自动填充、逻辑删除、乐观锁冲突和更新包装器边界。 |
+| `BookFaultDiagnosisTest` | 独立复制并故意破坏 Mapper XML，复现属性名、参数名、结果列和主键回填故障，再验证正确配置。 |
+
+## 从入口到 SQL
+
+纯 MyBatis 路径：`BookXmlDemo` → `MyBatisUtil.openMyBatisSession()` → `BookMapper` → `BookMapper.xml` → `book` 表。MyBatis-Plus 路径：`LibraryDemo` → `MyBatisUtil.openSession()` → `BookMapper` 的 `BaseMapper` 方法 → 插件链 → SQL。关联查询仍由三个 XML 映射控制，因此 XML 查询需显式过滤 `deleted = 0`。
+
+## 执行顺序
+
+1. 运行 `mvn clean test`，所有测试均用 H2，不需要 MySQL。
+2. 若要连接 MySQL，先检查备份，再执行 `reload_library.sql`；脚本会重建图书表并删除旧实验表。
+3. 在本地配置 `db.properties`，然后运行 `BookXmlDemo` 或 `LibraryDemo`。
+
+更具体的表关系见 [图书系统说明](library-demo.md)，条件构造器见 [8.2](08-02-query-wrapper.md)，生命周期机制见 [8.3](08-03-pagination-lifecycle.md)。

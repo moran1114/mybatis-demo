@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.demo2.handler.AuditMetaObjectHandler;
-import com.demo2.mapper.EmpLifecycleMapper;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -29,6 +28,7 @@ import java.util.Properties;
 public final class MyBatisUtil {
     private static final String CONFIG_RESOURCE = "mybatis-config.xml";
     private static final String DATABASE_RESOURCE = "db.properties";
+    private static final String DATABASE_DEFAULTS = "db-defaults.properties";
 
     private MyBatisUtil() {
     }
@@ -58,7 +58,6 @@ public final class MyBatisUtil {
             // 非 Spring 工程通过 GlobalConfig 注册自动填充处理器。
             GlobalConfigUtils.getGlobalConfig(factory.getConfiguration())
                     .setMetaObjectHandler(new AuditMetaObjectHandler());
-            factory.getConfiguration().addMapper(EmpLifecycleMapper.class);
 
             PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(databaseType);
             pagination.setOverflow(false);
@@ -77,18 +76,30 @@ public final class MyBatisUtil {
 
     public static Properties localDatabaseProperties() {
         Properties properties = new Properties();
-        try (InputStream stream = Resources.getResourceAsStream(DATABASE_RESOURCE);
-             Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-            properties.load(reader);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Unable to read database properties", exception);
-        }
+        loadProperties(properties, DATABASE_DEFAULTS, false);
+        loadProperties(properties, DATABASE_RESOURCE, true);
 
         override(properties, "LAB_DB_DRIVER", "jdbc.driver");
         override(properties, "LAB_DB_URL", "jdbc.url");
         override(properties, "LAB_DB_USER", "jdbc.username");
         override(properties, "LAB_DB_PASSWORD", "jdbc.password");
         return properties;
+    }
+
+    private static void loadProperties(Properties properties, String resource, boolean optional) {
+        try (InputStream stream = MyBatisUtil.class.getClassLoader().getResourceAsStream(resource)) {
+            if (stream == null) {
+                if (optional) {
+                    return;
+                }
+                throw new IllegalStateException("Missing database defaults: " + resource);
+            }
+            try (Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+                properties.load(reader);
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to read database properties: " + resource, exception);
+        }
     }
 
     private static void override(Properties properties, String environmentName, String propertyName) {

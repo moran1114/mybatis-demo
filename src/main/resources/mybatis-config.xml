@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
-    <properties resource="db.properties"/>
+    <properties resource="db-defaults.properties"/>
 
     <settings>
         <setting name="mapUnderscoreToCamelCase" value="true"/>
@@ -27,9 +27,9 @@
     </environments>
 
     <mappers>
-        <mapper resource="mapper/EmpMapper.xml"/>
-        <mapper resource="mapper/DeptMapper.xml"/>
-        <mapper resource="mapper/ProjectMapper.xml"/>
+        <mapper resource="mapper/BookMapper.xml"/>
+        <mapper resource="mapper/PublisherMapper.xml"/>
+        <mapper resource="mapper/AuthorMapper.xml"/>
     </mappers>
 </configuration>
 
