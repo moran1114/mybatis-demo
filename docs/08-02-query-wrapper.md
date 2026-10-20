@@ -126,4 +126,4 @@ mapper.update(null, Wrappers.lambdaUpdate(Book.class)
 
 这样可避免稀疏实体误清空已有折扣，但也意味着实体更新无法直接把折扣设为 NULL。显式清空时要用更新包装器；若同时需要乐观锁和自动填充，应提供带版本号的实体并检查影响行数，不能把仅有 Wrapper 的更新误当成乐观锁更新。
 
-本节完整可运行用例在 `BookAdvancedQueryTest` 和 `LibraryMapperTest` 中，控制台可用 `LibraryDemo` 菜单 6 查看 SQL 日志。
+本节完整可运行用例在 `BookAdvancedQueryTest` 和 `LibraryMapperTest` 中。控制台 `LibraryDemo` 菜单 6 演示条件与投影，菜单 7 单独演示计数、Map 和分组聚合。若需查看 SQL 日志，可临时把 `log4j.properties` 中的 Mapper 日志级别调为 `DEBUG`。

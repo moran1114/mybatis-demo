@@ -7,7 +7,7 @@
 
     <settings>
         <setting name="mapUnderscoreToCamelCase" value="true"/>
-        <setting name="logImpl" value="LOG4J2"/>
+        <setting name="logImpl" value="LOG4J"/>
     </settings>
 
     <typeAliases>

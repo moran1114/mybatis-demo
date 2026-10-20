@@ -6,7 +6,7 @@ import org.apache.ibatis.binding.BindingException;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.datasource.unpooled.UnpooledDataSource;
 import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.logging.log4j2.Log4j2Impl;
+import org.apache.ibatis.logging.log4j.Log4jImpl;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.reflection.ReflectionException;
 import org.apache.ibatis.session.Configuration;
@@ -114,7 +114,7 @@ public class BookFaultDiagnosisTest {
                 properties.getProperty("jdbc.url"), "sa", "");
         Configuration configuration = new Configuration(
                 new Environment("fault", new JdbcTransactionFactory(), dataSource));
-        configuration.setLogImpl(Log4j2Impl.class);
+        configuration.setLogImpl(Log4jImpl.class);
         configuration.setMapUnderscoreToCamelCase(true);
         new XMLMapperBuilder(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)), configuration,
                 "book-fault-copy.xml", configuration.getSqlFragments()).parse();

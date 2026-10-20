@@ -64,8 +64,10 @@ UPDATE book SET price = ?, version = 1
 WHERE book_id = ? AND version = 0 AND deleted = 0;
 ```
 
-命中一行表示更新成功，版本从 0 递增至 1。若另一个请求已经更新，旧版本条件无法匹配，影响行数为 0。正确处理方式是重新读取最新书籍，核对业务意图，再选择合并、重试或提示用户；不要盲目重复提交旧实体。`LibraryDemo` 菜单 7 和 `BookLifecycleTest` 演示了旧快照失败、重新读取后成功的路径。
+命中一行表示更新成功，版本从 0 递增至 1。若另一个请求已经更新，旧版本条件无法匹配，影响行数为 0。正确处理方式是重新读取最新书籍，核对业务意图，再选择合并、重试或提示用户；不要盲目重复提交旧实体。`LibraryDemo` 菜单 12 和 `BookLifecycleTest` 演示了旧快照失败、重新读取后成功的路径。
 
 `update(entity, wrapper)` 若实体带有版本号，可以进行版本校验并填充时间；`update(null, wrapper)` 仅按 Wrapper 条件更新，不自动递增 `version`，也不自动刷新 `updateTime`。`deleteById(id)` 本例只修改删除标记，不校验旧版本。需要带版本的删除时，应设计显式的条件更新并检查影响行数。
 
 本节要点是区分 MyBatis-Plus 自动生成 SQL 与手写 XML 的作用范围，观察执行日志和影响行数，避免把“调用成功”误当成“数据已更新”。
+
+控制台的菜单 8 独立展示分页结果，9 展示创建/修改时间，10 展示 `NOT_NULL` 对折扣的保护，11 对比逻辑删除后的普通查询与原始表行，12 展示版本冲突和重试。默认不输出 SQL 调试信息；需要对照生成 SQL 时，再将 `log4j.properties` 的 Mapper 级别临时改为 `DEBUG`。

@@ -38,7 +38,7 @@ erDiagram
 
 1. 确认 Java 11+ 与 Maven 可用，在本地准备 MySQL 8，并设置 `src/main/resources/db.properties`（或使用 `LAB_DB_DRIVER`、`LAB_DB_URL`、`LAB_DB_USER`、`LAB_DB_PASSWORD`）。可提交的 `db-defaults.properties` 只含占位配置。
 2. 执行 `src/main/resources/sql/reload_library.sql`。脚本会删除并重建上述五张图书表，同时清理旧实验表；运行前先检查需要保留的数据。
-3. 在 IDEA 运行 `com.demo2.util.BookXmlDemo.main`，顺序观看基础 SQL、动态 SQL、CRUD 和批量操作；运行 `com.demo2.util.LibraryDemo.main`，菜单 1–5 对应五种关联方向，菜单 6 展示条件、投影、分组与分页，菜单 7 展示写入和版本冲突。演示写入均回滚。
+3. 在 IDEA 运行 `com.demo2.util.BookXmlDemo.main`，顺序观看基础 SQL、动态 SQL、CRUD 和批量操作；运行 `com.demo2.util.LibraryDemo.main`，菜单 1–5 对应五种关联方向，菜单 6 为条件查询，7 为聚合查询，8 为分页查询。菜单 6–8 只运行代码中预设的只读示例，不接收自定义条件；菜单 9–12 依次演示自动填充、字段策略、逻辑删除和乐观锁。每项写入演示结束即回滚。
 
 只需验证映射时，不必启动 MySQL。运行 `mvn "-Dtest=LibraryMapperTest" test`，测试使用内存 H2，自动建表并加载同样的样例数据。IDEA 的 Maven 参数填写 `-Dtest=LibraryMapperTest test`，不要加单引号。
 
@@ -47,5 +47,7 @@ erDiagram
 `BookMapper extends BaseMapper<Book>` 提供普通 CRUD、`selectCount`、`selectOne`、`selectMaps`、`selectByMap` 和 `selectPage`。`Wrappers.lambdaQuery()` 用方法引用选择字段，字段改名时编译器能帮助发现错误；`and(q -> q...or()...)` 表示带括号的复合条件。聚合示例使用 `QueryWrapper` 写 `COUNT(*)` 并按 `category` 分组。`MyBatisUtil` 的 `MybatisPlusInterceptor` 注册了分页与乐观锁插件。
 
 `AuditMetaObjectHandler` 自动填充 `createTime` 和 `updateTime`。`createTime` 使用 `updateStrategy = NEVER`，避免更新时误改创建时间；`discount` 使用 `updateStrategy = NOT_NULL`，实体更新中 `null` 表示保留旧折扣。需要将折扣真正设为 SQL `NULL` 时，应显式使用更新包装器的 `set(Book::getDiscount, null)`。`@TableLogic` 将 `deleteById` 改写为更新 `deleted = 1`，而生成的普通查询忽略已删除行。`@Version` 让 `updateById` 检查旧版本并递增版本号；若影响行数为 0，应重新读取，再根据业务决定重试或提示冲突。关联 XML 的删除过滤由 SQL 本身负责。
+
+控制台查询不存在的编号会提示相应的表与主键列。SQL 调试输出默认关闭，需要观察实际 SQL 时可将 `log4j.properties` 里的 `log4j.logger.com.demo2.mapper` 改成 `DEBUG`。
 
 详细课程讲义见 [条件构造器与高级查询](08-02-query-wrapper.md) 和 [分页、自动填充、逻辑删除与乐观锁](08-03-pagination-lifecycle.md)。

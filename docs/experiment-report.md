@@ -11,7 +11,9 @@
 | `LibraryMapperTest` | 出版社→书籍、书籍→详情、书籍→出版社、书籍↔作者；含不存在实体及空关联。 |
 | `BookAdvancedQueryTest` | QueryWrapper/Lambda、OR 嵌套、可选条件、单条/计数、投影、Map、HAVING 聚合、条件更新及 NOT_NULL。 |
 | `BookLifecycleTest` | Page 物理分页与大小上限、时间自动填充、逻辑删除、旧版本冲突、重新读取、仅 Wrapper 更新边界。 |
+| `LibraryDemoTest` | 交互菜单拆分、输入不存在编号的中文反馈、四项机制的输出与逐项回滚。 |
 | `BookFaultDiagnosisTest` | 独立注入四种 Mapper 错误，检查异常或错误映射，并用原始映射再次验证修复。 |
+| `LocalMySqlIT` | 显式运行的本机 MySQL 集成验证：五张表、含 `USE` 的 10 条独立 SQL、XML 操作、菜单反馈和生命周期；写入回滚。 |
 
 ## 故障诊断演练
 
@@ -22,8 +24,8 @@
 3. 把结果映射 `title` 的列名改成不存在的 `wrong_title`，关闭自动映射后看到 `Book.title == null`；恢复真实列名或 SQL 别名。
 4. 移除 `useGeneratedKeys="true"`，记录已经写入但 Java 对象的 `bookId` 仍是 `null`；恢复 `useGeneratedKeys`、`keyProperty` 和 `keyColumn`。
 
-每个用例在复现后重新加载正确 XML，确认正常读取或主键回填。SQL 日志由 `log4j2.xml` 输出，可对照实际绑定参数与返回行数。
+每个用例在复现后重新加载正确 XML，确认正常读取或主键回填。默认日志级别由 `log4j.properties` 设为 INFO；需要对照实际 SQL 与绑定参数时，可把 Mapper 级别临时改为 DEBUG。
 
 ## 验证结果与边界
 
-最后一次完整构建命令为 `mvn clean test`，共 42 个用例，通过 42 个，失败与错误均为 0。此验证覆盖 H2 MySQL 兼容模式；`reload_library.sql` 是给本地 MySQL 8 的初始化脚本，运行它会删除现有图书与旧实验表，执行前需检查数据并备份。这里的自动测试未对真实 MySQL 执行该脚本。
+2026-10-20 运行 `mvn clean test`，45 个 H2 用例全部通过，失败与错误均为 0。另运行 `mvn "-Dtest=LocalMySqlIT" test`，5 个本机 MySQL 用例全部通过：五张图书表存在，当前有 8 本未删除书籍；10 条基础 SQL 连同 `USE persistence_lab` 在 MySQL 执行并与 Mapper 结果一致；XML CRUD、批量操作、中文菜单、自动填充、字段策略、逻辑删除和乐观锁均通过。测试写入事务已回滚，`book` 表总行数在测试前后相同；MySQL 自增编号可能前进。没有运行会重建表的 `reload_library.sql`。

@@ -41,14 +41,17 @@ public final class BookXmlDemo {
         }
 
         BookQuery query = new BookQuery();
+        query.setTitle("Java");
         query.setCategory("Technology");
         query.setPublisherId(20);
         query.setMinPrice(new BigDecimal("140"));
-        System.out.println("动态 WHERE：" + mapper.selectByCondition(query));
+        System.out.println("动态 WHERE（书名模糊匹配 Java，并叠加分类/出版社/最低价格）："
+                + mapper.selectByCondition(query));
         System.out.println("动态 TRIM：" + mapper.selectByConditionWithTrim(query));
         System.out.println("注解查询，出版社 20 的书籍数量：" + mapper.countByPublisher(20));
         System.out.println("白名单排序：" + mapper.selectSorted(BookQuery.SortColumn.PRICE));
-        System.out.println("条件优先级：" + mapper.selectPreferred("Java Foundations", 30));
+        System.out.println("CHOOSE 分支（优先按书名，否则按出版社）："
+                + mapper.selectPreferred("Java Foundations", 30));
 
         Book book = newBook("XML 操作练习", 40);
         mapper.insertBook(book);
@@ -68,7 +71,10 @@ public final class BookXmlDemo {
         System.out.println("批量插入数量：" + batchIds.size());
         mapper.deleteBatch(batchIds);
         mapper.deleteBookById(book.getBookId());
-        System.out.println("删除后查询：" + mapper.selectBookById(book.getBookId()));
+        Book afterDelete = mapper.selectBookById(book.getBookId());
+        System.out.println(afterDelete == null
+                ? "编号 " + book.getBookId() + " 的练习书籍已删除，查询不到记录。"
+                : "删除后查询：" + afterDelete);
     }
 
     private static Book newBook(String title, int publisherId) {
